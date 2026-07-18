@@ -20,45 +20,83 @@ Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
     
     // Halaman utama dashboard peta
     Route::get('/', function () {
-        // Use caching to avoid heavy queries on every request
-        $ports = Cache::remember('map_dashboard_ports', 600, function () {
-            return Port::with(['country:id,code,name'])
-                ->select('id', 'port_name', 'country_code', 'latitude', 'longitude', 'index_number')
-                ->limit(100)
-                ->get();
-        });
-        
-        $risks = Cache::remember('map_dashboard_risks', 300, function () {
-            return RiskScore::with(['country:id,code,name'])
-                ->select('id', 'country_id', 'total_risk_score', 'risk_level', 'updated_at')
-                ->orderByDesc('updated_at')
-                ->limit(50)
-                ->get();
-        });
-        
-        \Log::info('Loading map dashboard', ['ports_count' => $ports->count(), 'risks_count' => $risks->count()]);
-        return view('map_dashboard', compact('ports', 'risks'));
+        try {
+            // Use longer cache time and simpler queries
+            $ports = Cache::remember('map_dashboard_ports_v2', 3600, function () {
+                return Port::select('id', 'port_name', 'country_code', 'latitude', 'longitude', 'index_number')
+                    ->limit(100)
+                    ->get();
+            });
+            
+            $risks = Cache::remember('map_dashboard_risks_v2', 1800, function () {
+                return RiskScore::select('id', 'country_id', 'total_risk_score', 'risk_level', 'updated_at')
+                    ->orderByDesc('updated_at')
+                    ->limit(50)
+                    ->get();
+            });
+            
+            // Load country names separately to avoid N+1
+            $countryIds = $risks->pluck('country_id')->unique();
+            $countries = Cache::remember('countries_map_' . md5($countryIds->implode(',')), 3600, function () use ($countryIds) {
+                return \App\Models\Country::whereIn('id', $countryIds)
+                    ->select('id', 'code', 'name')
+                    ->get()
+                    ->keyBy('id');
+            });
+            
+            // Attach country data manually
+            $risks->each(function($risk) use ($countries) {
+                $risk->country = $countries->get($risk->country_id);
+            });
+            
+            \Log::info('Loading map dashboard', ['ports_count' => $ports->count(), 'risks_count' => $risks->count()]);
+            return view('map_dashboard', compact('ports', 'risks'));
+            
+        } catch (\Exception $e) {
+            \Log::error('Map dashboard error: ' . $e->getMessage());
+            // Fallback to empty data rather than error
+            return view('map_dashboard', ['ports' => collect([]), 'risks' => collect([])]);
+        }
     });
 
     Route::get('/dashboard', function () {
-        // Use caching to avoid heavy queries on every request
-        $ports = Cache::remember('map_dashboard_ports', 600, function () {
-            return Port::with(['country:id,code,name'])
-                ->select('id', 'port_name', 'country_code', 'latitude', 'longitude', 'index_number')
-                ->limit(100)
-                ->get();
-        });
-        
-        $risks = Cache::remember('map_dashboard_risks', 300, function () {
-            return RiskScore::with(['country:id,code,name'])
-                ->select('id', 'country_id', 'total_risk_score', 'risk_level', 'updated_at')
-                ->orderByDesc('updated_at')
-                ->limit(50)
-                ->get();
-        });
-        
-        \Log::info('Loading dashboard', ['ports_count' => $ports->count(), 'risks_count' => $risks->count()]);
-        return view('map_dashboard', compact('ports', 'risks'));
+        try {
+            // Use longer cache time and simpler queries
+            $ports = Cache::remember('map_dashboard_ports_v2', 3600, function () {
+                return Port::select('id', 'port_name', 'country_code', 'latitude', 'longitude', 'index_number')
+                    ->limit(100)
+                    ->get();
+            });
+            
+            $risks = Cache::remember('map_dashboard_risks_v2', 1800, function () {
+                return RiskScore::select('id', 'country_id', 'total_risk_score', 'risk_level', 'updated_at')
+                    ->orderByDesc('updated_at')
+                    ->limit(50)
+                    ->get();
+            });
+            
+            // Load country names separately to avoid N+1
+            $countryIds = $risks->pluck('country_id')->unique();
+            $countries = Cache::remember('countries_map_' . md5($countryIds->implode(',')), 3600, function () use ($countryIds) {
+                return \App\Models\Country::whereIn('id', $countryIds)
+                    ->select('id', 'code', 'name')
+                    ->get()
+                    ->keyBy('id');
+            });
+            
+            // Attach country data manually
+            $risks->each(function($risk) use ($countries) {
+                $risk->country = $countries->get($risk->country_id);
+            });
+            
+            \Log::info('Loading dashboard', ['ports_count' => $ports->count(), 'risks_count' => $risks->count()]);
+            return view('map_dashboard', compact('ports', 'risks'));
+            
+        } catch (\Exception $e) {
+            \Log::error('Dashboard error: ' . $e->getMessage());
+            // Fallback to empty data rather than error
+            return view('map_dashboard', ['ports' => collect([]), 'risks' => collect([])]);
+        }
     })->name('dashboard');
 
     // Dashboard pages

@@ -67,11 +67,15 @@
                     </button>
                 </div>
                 <div id="risk-sidebar" class="space-y-3 overflow-y-auto flex-1 pr-1 custom-scrollbar">
+                    <div id="loading-risks" class="text-center py-8 text-slate-500 hidden">
+                        <div class="animate-spin inline-block w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full mb-2"></div>
+                        <p class="text-xs">Loading risk data...</p>
+                    </div>
                     @forelse($risks as $risk)
                         <div class="p-3.5 rounded-lg border bg-slate-950 transition-all duration-200 hover:scale-[1.02] 
                             {{ $risk->risk_level == 'High Risk' ? 'border-red-500/30 bg-red-950/5' : ($risk->risk_level == 'Medium Risk' ? 'border-amber-500/30 bg-amber-950/5' : 'border-emerald-500/30 bg-emerald-950/5') }}">
                             <div class="flex justify-between items-center">
-                                <span class="font-bold text-sm text-slate-200 tracking-wide">{{ $risk->country->name ?? $risk->country_code }}</span>
+                                <span class="font-bold text-sm text-slate-200 tracking-wide">{{ $risk->country->name ?? 'Unknown' }}</span>
                                 <span class="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded tracking-wider
                                     {{ $risk->risk_level == 'High Risk' ? 'bg-red-500/10 text-red-400 border border-red-500/20' : ($risk->risk_level == 'Medium Risk' ? 'bg-amber-500/10 text-amber-400 border border-amber-500/20' : 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20') }}">
                                     {{ $risk->risk_level }}
@@ -85,10 +89,10 @@
                             </div>
                         </div>
                     @empty
-                        <div class="text-center py-12 text-slate-500 text-xs border border-dashed border-slate-800 rounded-lg bg-slate-950/50">
+                        <div id="empty-risks" class="text-center py-12 text-slate-500 text-xs border border-dashed border-slate-800 rounded-lg bg-slate-950/50">
                             <span class="text-2xl block mb-2">📥</span>
-                            Belum ada rekam data kalkulasi.<br>
-                            <p class="mt-2 text-slate-400">Klik tombol di dalam pin peta pelabuhan untuk memicu hitungan API.</p>
+                            Belum ada data risiko.<br>
+                            <p class="mt-2 text-slate-400">Klik tombol di dalam pin peta untuk calculate risk.</p>
                         </div>
                     @endforelse
                 </div>

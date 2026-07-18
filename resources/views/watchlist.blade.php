@@ -83,7 +83,7 @@
         async function loadCountries() {
             try {
                 console.log('Loading countries for watchlist...');
-                const response = await fetch('/api/countries?limit=100');
+                const response = await fetch('/api/countries?limit=300');
                 const data = await response.json();
                 
                 console.log('Countries response:', data);
