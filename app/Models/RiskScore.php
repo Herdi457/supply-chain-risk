@@ -18,6 +18,14 @@ class RiskScore extends Model
         'risk_level'
     ];
 
+    protected $casts = [
+        'weather_risk_score' => 'decimal:2',
+        'inflation_risk_score' => 'decimal:2',
+        'exchange_rate_risk_score' => 'decimal:2',
+        'news_sentiment_risk_score' => 'decimal:2',
+        'total_risk_score' => 'decimal:2',
+    ];
+
     /**
      * Relasi ke model Country (Menghubungkan tabel risk_scores ke countries)
      */
