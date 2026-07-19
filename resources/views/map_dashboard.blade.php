@@ -11,6 +11,11 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     
+    <!-- Leaflet MarkerCluster Plugin -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
+    <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
+    
     <!-- Chart.js untuk visualisasi data -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 
@@ -29,6 +34,71 @@
         
         .sidebar-transition {
             transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        /* Custom Marker Cluster Styles */
+        .marker-cluster-small {
+            background-color: rgba(59, 130, 246, 0.6);
+            border: 3px solid rgb(37, 99, 235);
+        }
+        .marker-cluster-small div {
+            background-color: rgba(59, 130, 246, 0.8);
+            color: white;
+            font-weight: bold;
+            font-size: 12px;
+        }
+        .marker-cluster-medium {
+            background-color: rgba(251, 146, 60, 0.6);
+            border: 3px solid rgb(249, 115, 22);
+        }
+        .marker-cluster-medium div {
+            background-color: rgba(251, 146, 60, 0.8);
+            color: white;
+            font-weight: bold;
+            font-size: 13px;
+        }
+        .marker-cluster-large {
+            background-color: rgba(239, 68, 68, 0.6);
+            border: 3px solid rgb(220, 38, 38);
+        }
+        .marker-cluster-large div {
+            background-color: rgba(239, 68, 68, 0.8);
+            color: white;
+            font-weight: bold;
+            font-size: 14px;
+        }
+        
+        .port-stats {
+            background: rgba(15, 23, 42, 0.95);
+            border: 1px solid rgba(71, 85, 105, 0.5);
+            padding: 12px;
+            border-radius: 8px;
+            font-size: 11px;
+            max-width: 250px;
+        }
+        .port-stats-title {
+            color: #3b82f6;
+            font-weight: bold;
+            font-size: 12px;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .port-stats-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 4px 0;
+            border-bottom: 1px solid rgba(71, 85, 105, 0.3);
+        }
+        .port-stats-row:last-child {
+            border-bottom: none;
+        }
+        .port-stats-label {
+            color: #94a3b8;
+        }
+        .port-stats-value {
+            color: #f1f5f9;
+            font-weight: bold;
         }
     </style>
 </head>
@@ -133,10 +203,20 @@
         const portData = @json($ports);
 
         console.log('📊 Port data loaded:', portData.length, 'ports');
-        console.log('📊 Sample port:', portData[0]);
-        console.log('📊 Map container:', document.getElementById('map'));
-        console.log('📊 Leaflet loaded:', typeof L !== 'undefined');
-        console.log('📊 Port data:', portData);
+
+        // Calculate regional statistics
+        const regionStats = {
+            'Asia': 0,
+            'Europe': 0,
+            'Africa': 0,
+            'Americas': 0,
+            'Oceania': 0
+        };
+
+        // Count ports per region (we'll get this from country data)
+        portData.forEach(port => {
+            // We'll update this when we render markers with country info
+        });
 
         // Custom icon untuk marker pelabuhan
         const portIcon = L.icon({
@@ -146,6 +226,30 @@
             popupAnchor: [0, -14]
         });
 
+        // Create marker cluster group
+        const markers = L.markerClusterGroup({
+            maxClusterRadius: 80,
+            spiderfyOnMaxZoom: true,
+            showCoverageOnHover: false,
+            zoomToBoundsOnClick: true,
+            iconCreateFunction: function(cluster) {
+                const childCount = cluster.getChildCount();
+                let c = ' marker-cluster-';
+                if (childCount < 10) {
+                    c += 'small';
+                } else if (childCount < 50) {
+                    c += 'medium';
+                } else {
+                    c += 'large';
+                }
+                return new L.DivIcon({
+                    html: '<div><span>' + childCount + '</span></div>',
+                    className: 'marker-cluster' + c,
+                    iconSize: new L.Point(40, 40)
+                });
+            }
+        });
+
         // Render markers untuk setiap pelabuhan
         console.log('🗺️ Starting to render markers...');
         if (portData && portData.length > 0) {
@@ -153,8 +257,7 @@
             portData.forEach((port, index) => {
                 if (port.latitude && port.longitude) {
                     try {
-                        console.log(`Adding marker ${index + 1}/${portData.length}: ${port.port_name} at [${port.latitude}, ${port.longitude}]`);
-                        const marker = L.marker([port.latitude, port.longitude], { icon: portIcon }).addTo(map);
+                        const marker = L.marker([port.latitude, port.longitude], { icon: portIcon });
                         
                         const popupContent = `
                             <div style="min-width: 220px; font-family: system-ui, -apple-system, sans-serif;">
@@ -163,7 +266,7 @@
                                         🚢 ${port.port_name}
                                     </h3>
                                     <p style="margin: 4px 0 0 0; color: #64748b; font-size: 12px; font-weight: 600;">
-                                        📍 ${port.country_name}
+                                        📍 ${port.country_name || port.country_code}
                                     </p>
                                 </div>
                                 
@@ -180,7 +283,7 @@
                                 
                                 <button 
                                     id="btn-api-${port.country_code}"
-                                    onclick="console.log('Button clicked for ${port.country_code}'); hitungRisikoEfektif('${port.country_code}');"
+                                    onclick="hitungRisikoEfektif('${port.country_code}');"
                                     class="btn-popup-api"
                                     style="
                                         width: 100%;
@@ -215,18 +318,7 @@
                             className: 'custom-popup'
                         });
                         
-                        // Add click event listener for the button when popup opens
-                        marker.on('popupopen', function() {
-                            const btn = document.getElementById('btn-api-' + port.country_code);
-                            if (btn) {
-                                btn.addEventListener('click', function(e) {
-                                    e.preventDefault();
-                                    console.log('Button clicked for', port.country_code);
-                                    hitungRisikoEfektif(port.country_code);
-                                });
-                            }
-                        });
-                        
+                        markers.addLayer(marker);
                         markersAdded++;
                     } catch (e) {
                         console.error('Error adding marker for port:', port.port_name, e);

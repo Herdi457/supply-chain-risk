@@ -365,6 +365,46 @@ class ApiController extends Controller
     }
 
     /**
+     * GET /api/ports/stats
+     * Get port statistics by region
+     */
+    public function getPortStats()
+    {
+        try {
+            $cacheKey = 'ports_stats';
+            
+            $stats = Cache::remember($cacheKey, 3600, function () {
+                $total = Port::count();
+                
+                // Get counts by region through country relationship
+                $byRegion = Port::join('countries', 'ports.country_code', '=', 'countries.code')
+                    ->selectRaw('countries.region, COUNT(*) as count')
+                    ->groupBy('countries.region')
+                    ->pluck('count', 'region')
+                    ->toArray();
+                
+                return [
+                    'total' => $total,
+                    'by_region' => $byRegion
+                ];
+            });
+            
+            return response()->json([
+                'success' => true,
+                'data' => $stats,
+                'by_region' => $stats['by_region']
+            ]);
+            
+        } catch (\Exception $e) {
+            \Log::error('Port stats error: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Error fetching port stats'
+            ], 500);
+        }
+    }
+
+    /**
      * GET /api/ports/nearby
      * Mendapatkan pelabuhan terdekat berdasarkan koordinat
      */
