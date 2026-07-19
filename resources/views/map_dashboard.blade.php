@@ -148,10 +148,25 @@
         console.log('🗺️ Starting to render all port markers...');
         if (portData && portData.length > 0) {
             let markersAdded = 0;
+            
+            // Check if Russia exists in data
+            const russiaPort = portData.find(p => p.country_code === 'RU');
+            console.log('🔍 Russia port in data:', russiaPort);
+            
             portData.forEach((port) => {
                 if (port.latitude && port.longitude) {
                     try {
                         const marker = L.marker([port.latitude, port.longitude], { icon: portIcon });
+                        
+                        // Extra logging for Russia
+                        if (port.country_code === 'RU') {
+                            console.log('🇷🇺 Adding Russia marker:', {
+                                name: port.port_name,
+                                lat: port.latitude,
+                                lng: port.longitude,
+                                marker: marker
+                            });
+                        }
                         
                     const popupContent = `
                         <div style="min-width: 220px; font-family: system-ui, -apple-system, sans-serif;">
@@ -203,11 +218,22 @@
                     
                     marker.addTo(map);
                     markersAdded++;
+                    
+                    // Extra logging for Russia
+                    if (port.country_code === 'RU') {
+                        console.log('✅ Russia marker added successfully!');
+                    }
                 } catch (e) {
                     console.error('Error adding marker for port:', port.port_name, e);
+                    if (port.country_code === 'RU') {
+                        console.error('❌ RUSSIA MARKER FAILED!', e);
+                    }
                 }
             } else {
                 console.warn(`Skipping ${port.port_name}: missing coordinates`);
+                if (port.country_code === 'RU') {
+                    console.error('❌ Russia port skipped - missing coordinates!', port);
+                }
             }
             });
             
