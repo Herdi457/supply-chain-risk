@@ -22,13 +22,20 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/', function () {
         try {
             // Ambil 1 port per negara untuk risk assessment
-            $ports = Cache::remember('map_dashboard_countries_v3', 3600, function () {
+            $ports = Cache::remember('map_dashboard_countries_v4', 3600, function () {
+                // Get first port for each country using subquery
+                $subquery = \DB::table('ports')
+                    ->select('country_code', \DB::raw('MIN(id) as first_port_id'))
+                    ->whereNotNull('latitude')
+                    ->whereNotNull('longitude')
+                    ->groupBy('country_code');
+                
                 return \DB::table('ports')
-                    ->select('ports.id', 'ports.port_name', 'ports.country_code', 'ports.latitude', 'ports.longitude', 'countries.name as country_name')
+                    ->joinSub($subquery, 'first_ports', function($join) {
+                        $join->on('ports.id', '=', 'first_ports.first_port_id');
+                    })
                     ->leftJoin('countries', 'ports.country_code', '=', 'countries.code')
-                    ->whereNotNull('ports.latitude')
-                    ->whereNotNull('ports.longitude')
-                    ->groupBy('ports.country_code')
+                    ->select('ports.id', 'ports.port_name', 'ports.country_code', 'ports.latitude', 'ports.longitude', 'countries.name as country_name')
                     ->get();
             });
             
@@ -66,13 +73,20 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/dashboard', function () {
         try {
             // Ambil 1 port per negara untuk risk assessment
-            $ports = Cache::remember('map_dashboard_countries_v3', 3600, function () {
+            $ports = Cache::remember('map_dashboard_countries_v4', 3600, function () {
+                // Get first port for each country using subquery
+                $subquery = \DB::table('ports')
+                    ->select('country_code', \DB::raw('MIN(id) as first_port_id'))
+                    ->whereNotNull('latitude')
+                    ->whereNotNull('longitude')
+                    ->groupBy('country_code');
+                
                 return \DB::table('ports')
-                    ->select('ports.id', 'ports.port_name', 'ports.country_code', 'ports.latitude', 'ports.longitude', 'countries.name as country_name')
+                    ->joinSub($subquery, 'first_ports', function($join) {
+                        $join->on('ports.id', '=', 'first_ports.first_port_id');
+                    })
                     ->leftJoin('countries', 'ports.country_code', '=', 'countries.code')
-                    ->whereNotNull('ports.latitude')
-                    ->whereNotNull('ports.longitude')
-                    ->groupBy('ports.country_code')
+                    ->select('ports.id', 'ports.port_name', 'ports.country_code', 'ports.latitude', 'ports.longitude', 'countries.name as country_name')
                     ->get();
             });
             
