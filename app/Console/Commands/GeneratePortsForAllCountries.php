@@ -9,12 +9,21 @@ use Illuminate\Support\Facades\DB;
 
 class GeneratePortsForAllCountries extends Command
 {
-    protected $signature = 'ports:generate-all';
+    protected $signature = 'ports:generate-all {--force : Force regenerate all ports}';
     protected $description = 'Generate main port for all countries based on capital/major city coordinates';
 
     public function handle()
     {
-        $this->info('Generating ports for all countries...');
+        $force = $this->option('force');
+        
+        if ($force) {
+            $this->warn('⚠️  Force mode: Deleting all existing ports...');
+            $oldCount = Port::count();
+            Port::truncate();
+            $this->info("🗑️  Deleted {$oldCount} ports");
+        } else {
+            $this->info('Generating ports for all countries...');
+        }
         
         // Get all countries
         $countries = Country::all();
@@ -22,10 +31,10 @@ class GeneratePortsForAllCountries extends Command
         $skipped = 0;
         
         foreach ($countries as $country) {
-            // Check if port already exists
+            // Check if port already exists (skip in non-force mode)
             $existingPort = Port::where('country_code', $country->code)->first();
             
-            if ($existingPort) {
+            if ($existingPort && !$force) {
                 $skipped++;
                 continue;
             }
@@ -45,9 +54,20 @@ class GeneratePortsForAllCountries extends Command
             $generated++;
         }
         
+        $this->newLine();
         $this->info("✅ Generated {$generated} new ports");
-        $this->info("⏭️  Skipped {$skipped} existing ports");
+        if (!$force) {
+            $this->info("⏭️  Skipped {$skipped} existing ports");
+        }
         $this->info("📊 Total ports now: " . Port::count());
+        
+        // Show sample including key countries
+        $this->newLine();
+        $this->info("📍 Sample ports (including Russia, USA, China):");
+        Port::with('country')->whereIn('country_code', ['RU', 'US', 'CN', 'IN', 'BR', 'ID'])->get()->each(function($port) {
+            $countryName = $port->country->name ?? $port->country_code;
+            $this->line("  • {$port->port_name} ({$countryName}) at {$port->latitude}, {$port->longitude}");
+        });
         
         return 0;
     }
