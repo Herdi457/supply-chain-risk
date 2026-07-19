@@ -11,10 +11,7 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     
-    <!-- Leaflet MarkerCluster Plugin -->
-    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
-    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
-    <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
+
     
     <!-- Chart.js untuk visualisasi data -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
@@ -34,71 +31,6 @@
         
         .sidebar-transition {
             transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-        
-        /* Custom Marker Cluster Styles */
-        .marker-cluster-small {
-            background-color: rgba(59, 130, 246, 0.6);
-            border: 3px solid rgb(37, 99, 235);
-        }
-        .marker-cluster-small div {
-            background-color: rgba(59, 130, 246, 0.8);
-            color: white;
-            font-weight: bold;
-            font-size: 12px;
-        }
-        .marker-cluster-medium {
-            background-color: rgba(251, 146, 60, 0.6);
-            border: 3px solid rgb(249, 115, 22);
-        }
-        .marker-cluster-medium div {
-            background-color: rgba(251, 146, 60, 0.8);
-            color: white;
-            font-weight: bold;
-            font-size: 13px;
-        }
-        .marker-cluster-large {
-            background-color: rgba(239, 68, 68, 0.6);
-            border: 3px solid rgb(220, 38, 38);
-        }
-        .marker-cluster-large div {
-            background-color: rgba(239, 68, 68, 0.8);
-            color: white;
-            font-weight: bold;
-            font-size: 14px;
-        }
-        
-        .port-stats {
-            background: rgba(15, 23, 42, 0.95);
-            border: 1px solid rgba(71, 85, 105, 0.5);
-            padding: 12px;
-            border-radius: 8px;
-            font-size: 11px;
-            max-width: 250px;
-        }
-        .port-stats-title {
-            color: #3b82f6;
-            font-weight: bold;
-            font-size: 12px;
-            margin-bottom: 8px;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-        .port-stats-row {
-            display: flex;
-            justify-content: space-between;
-            padding: 4px 0;
-            border-bottom: 1px solid rgba(71, 85, 105, 0.3);
-        }
-        .port-stats-row:last-child {
-            border-bottom: none;
-        }
-        .port-stats-label {
-            color: #94a3b8;
-        }
-        .port-stats-value {
-            color: #f1f5f9;
-            font-weight: bold;
         }
     </style>
 </head>
@@ -122,8 +54,8 @@
         <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
             <div class="lg:col-span-3 bg-slate-900 p-4 rounded-xl border border-slate-800 shadow-2xl">
                 <div class="flex justify-between items-center mb-3">
-                    <h2 class="text-sm lg:text-base font-bold text-slate-200 flex items-center gap-2">🗺️ Pemetaan Real-Time Koridor Pelabuhan Global</h2>
-                    <span class="text-[10px] uppercase font-bold text-blue-400 bg-blue-950/50 px-2.5 py-1 rounded border border-blue-900/30">Leaflet Maps Engine Active</span>
+                    <h2 class="text-sm lg:text-base font-bold text-slate-200 flex items-center gap-2">🗺️ Peta Negara - Risk Assessment</h2>
+                    <span class="text-[10px] uppercase font-bold text-blue-400 bg-blue-950/50 px-2.5 py-1 rounded border border-blue-900/30">1 Pin Per Negara</span>
                 </div>
                 <div id="map" class="shadow-inner bg-slate-950 border border-slate-800" style="height: 550px; width: 100%;"></div>
             </div>
@@ -204,142 +136,97 @@
 
         console.log('📊 Port data loaded:', portData.length, 'ports');
 
-        // Calculate regional statistics
-        const regionStats = {
-            'Asia': 0,
-            'Europe': 0,
-            'Africa': 0,
-            'Americas': 0,
-            'Oceania': 0
-        };
-
-        // Count ports per region (we'll get this from country data)
+        // Group ports by country - hanya ambil 1 port per negara
+        const countriesMap = {};
         portData.forEach(port => {
-            // We'll update this when we render markers with country info
-        });
-
-        // Custom icon untuk marker pelabuhan
-        const portIcon = L.icon({
-            iconUrl: 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIzMiIgaGVpZ2h0PSIzMiIgdmlld0JveD0iMCAwIDMyIDMyIj48Y2lyY2xlIGN4PSIxNiIgY3k9IjE2IiByPSIxMiIgZmlsbD0iIzM4OTZmZiIgc3Ryb2tlPSIjZmZmIiBzdHJva2Utd2lkdGg9IjIiLz48Y2lyY2xlIGN4PSIxNiIgY3k9IjE2IiByPSI2IiBmaWxsPSIjZmZmIi8+PC9zdmc+',
-            iconSize: [28, 28],
-            iconAnchor: [14, 14],
-            popupAnchor: [0, -14]
-        });
-
-        // Create marker cluster group
-        const markers = L.markerClusterGroup({
-            maxClusterRadius: 80,
-            spiderfyOnMaxZoom: true,
-            showCoverageOnHover: false,
-            zoomToBoundsOnClick: true,
-            iconCreateFunction: function(cluster) {
-                const childCount = cluster.getChildCount();
-                let c = ' marker-cluster-';
-                if (childCount < 10) {
-                    c += 'small';
-                } else if (childCount < 50) {
-                    c += 'medium';
-                } else {
-                    c += 'large';
-                }
-                return new L.DivIcon({
-                    html: '<div><span>' + childCount + '</span></div>',
-                    className: 'marker-cluster' + c,
-                    iconSize: new L.Point(40, 40)
-                });
+            if (!countriesMap[port.country_code] && port.latitude && port.longitude) {
+                countriesMap[port.country_code] = port;
             }
         });
 
-        // Render markers untuk setiap pelabuhan
-        console.log('🗺️ Starting to render markers...');
-        if (portData && portData.length > 0) {
+        const uniqueCountryPorts = Object.values(countriesMap);
+        console.log('🌍 Unique countries:', uniqueCountryPorts.length, 'from', portData.length, 'ports');
+
+        // Custom icon untuk marker negara (lebih besar, tanpa clustering)
+        const countryIcon = L.icon({
+            iconUrl: 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIzOCIgaGVpZ2h0PSIzOCIgdmlld0JveD0iMCAwIDM4IDM4Ij48Y2lyY2xlIGN4PSIxOSIgY3k9IjE5IiByPSIxNiIgZmlsbD0iIzM4OTZmZiIgc3Ryb2tlPSIjZmZmIiBzdHJva2Utd2lkdGg9IjMiLz48Y2lyY2xlIGN4PSIxOSIgY3k9IjE5IiByPSI4IiBmaWxsPSIjZmZmIi8+PC9zdmc+',
+            iconSize: [32, 32],
+            iconAnchor: [16, 16],
+            popupAnchor: [0, -16]
+        });
+
+        // Render markers - 1 pin per negara
+        console.log('🗺️ Starting to render country markers...');
+        if (uniqueCountryPorts.length > 0) {
             let markersAdded = 0;
-            portData.forEach((port, index) => {
-                if (port.latitude && port.longitude) {
-                    try {
-                        const marker = L.marker([port.latitude, port.longitude], { icon: portIcon });
+            uniqueCountryPorts.forEach((port) => {
+                try {
+                    const marker = L.marker([port.latitude, port.longitude], { icon: countryIcon });
                         
-                        const popupContent = `
-                            <div style="min-width: 220px; font-family: system-ui, -apple-system, sans-serif;">
-                                <div style="border-bottom: 2px solid #3b82f6; padding-bottom: 8px; margin-bottom: 10px;">
-                                    <h3 style="margin: 0; color: #1e293b; font-size: 16px; font-weight: 700;">
-                                        🚢 ${port.port_name}
-                                    </h3>
-                                    <p style="margin: 4px 0 0 0; color: #64748b; font-size: 12px; font-weight: 600;">
-                                        📍 ${port.country_name || port.country_code}
-                                    </p>
-                                </div>
-                                
-                                <div style="background: #f1f5f9; padding: 10px; border-radius: 6px; margin-bottom: 10px;">
-                                    <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
-                                        <span style="color: #475569; font-size: 11px; font-weight: 600;">Latitude:</span>
-                                        <span style="color: #1e293b; font-size: 11px; font-weight: 700;">${parseFloat(port.latitude).toFixed(4)}°</span>
-                                    </div>
-                                    <div style="display: flex; justify-content: space-between;">
-                                        <span style="color: #475569; font-size: 11px; font-weight: 600;">Longitude:</span>
-                                        <span style="color: #1e293b; font-size: 11px; font-weight: 700;">${parseFloat(port.longitude).toFixed(4)}°</span>
-                                    </div>
-                                </div>
-                                
-                                <button 
-                                    id="btn-api-${port.country_code}"
-                                    onclick="hitungRisikoEfektif('${port.country_code}');"
-                                    class="btn-popup-api"
-                                    style="
-                                        width: 100%;
-                                        background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
-                                        color: white;
-                                        border: none;
-                                        padding: 10px 16px;
-                                        border-radius: 6px;
-                                        cursor: pointer;
-                                        font-size: 12px;
-                                        font-weight: 700;
-                                        text-align: center;
-                                        transition: all 0.2s;
-                                        box-shadow: 0 2px 4px rgba(37, 99, 235, 0.3);
-                                        text-transform: uppercase;
-                                        letter-spacing: 0.5px;
-                                    "
-                                    onmouseover="this.style.transform='scale(1.05)'; this.style.boxShadow='0 4px 8px rgba(37, 99, 235, 0.4)';"
-                                    onmouseout="this.style.transform='scale(1)'; this.style.boxShadow='0 2px 4px rgba(37, 99, 235, 0.3)';"
-                                >
-                                    🚀 Hitung Risiko ${port.country_code}
-                                </button>
-                                
-                                <p style="margin: 8px 0 0 0; color: #94a3b8; font-size: 10px; text-align: center; font-style: italic;">
-                                    Klik tombol untuk analisis risiko negara
+                    const popupContent = `
+                        <div style="min-width: 220px; font-family: system-ui, -apple-system, sans-serif;">
+                            <div style="border-bottom: 2px solid #3b82f6; padding-bottom: 8px; margin-bottom: 10px;">
+                                <h3 style="margin: 0; color: #1e293b; font-size: 16px; font-weight: 700;">
+                                    🌍 ${port.country_name || port.country_code}
+                                </h3>
+                                <p style="margin: 4px 0 0 0; color: #64748b; font-size: 12px; font-weight: 600;">
+                                    📍 ${port.port_name}
                                 </p>
                             </div>
-                        `;
-                        
-                        marker.bindPopup(popupContent, {
-                            maxWidth: 280,
-                            className: 'custom-popup'
-                        });
-                        
-                        markers.addLayer(marker);
-                        markersAdded++;
-                    } catch (e) {
-                        console.error('Error adding marker for port:', port.port_name, e);
-                    }
-                } else {
-                    console.warn(`Skipping ${port.port_name}: missing coordinates`);
+                            
+                            <button 
+                                id="btn-api-${port.country_code}"
+                                onclick="hitungRisikoEfektif('${port.country_code}');"
+                                class="btn-popup-api"
+                                style="
+                                    width: 100%;
+                                    background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+                                    color: white;
+                                    border: none;
+                                    padding: 12px 16px;
+                                    border-radius: 8px;
+                                    cursor: pointer;
+                                    font-size: 13px;
+                                    font-weight: 700;
+                                    text-align: center;
+                                    transition: all 0.2s;
+                                    box-shadow: 0 4px 8px rgba(37, 99, 235, 0.3);
+                                    text-transform: uppercase;
+                                    letter-spacing: 0.5px;
+                                "
+                                onmouseover="this.style.transform='scale(1.05)'; this.style.boxShadow='0 6px 12px rgba(37, 99, 235, 0.5)';"
+                                onmouseout="this.style.transform='scale(1)'; this.style.boxShadow='0 4px 8px rgba(37, 99, 235, 0.3)';"
+                            >
+                                🚀 Hitung Risiko ${port.country_code}
+                            </button>
+                            
+                            <p style="margin: 10px 0 0 0; color: #94a3b8; font-size: 10px; text-align: center; font-style: italic;">
+                                Analisis risiko supply chain negara
+                            </p>
+                        </div>
+                    `;
+                    
+                    marker.bindPopup(popupContent, {
+                        maxWidth: 280,
+                        className: 'custom-popup'
+                    });
+                    
+                    marker.addTo(map);
+                    markersAdded++;
+                } catch (e) {
+                    console.error('Error adding marker for country:', port.country_code, e);
                 }
             });
             
-            // Add cluster group to map
-            map.addLayer(markers);
-            
-            console.log(`✅ ${markersAdded} pelabuhan berhasil ditampilkan di peta dari ${portData.length} total`);
+            console.log(`✅ ${markersAdded} negara berhasil ditampilkan di peta dari ${uniqueCountryPorts.length} total unik`);
         } else {
-            console.warn('⚠️ Tidak ada data pelabuhan. Silakan seed database terlebih dahulu.');
+            console.warn('⚠️ Tidak ada data negara. Silakan seed database terlebih dahulu.');
             
             // Tampilkan notifikasi di peta
             const noDataMarker = L.marker([0, 0]).addTo(map);
             noDataMarker.bindPopup(`
                 <div style="padding: 15px; text-align: center; font-family: system-ui;">
-                    <h4 style="color: #ef4444; margin: 0 0 10px 0;">⚠️ Tidak Ada Data Pelabuhan</h4>
+                    <h4 style="color: #ef4444; margin: 0 0 10px 0;">⚠️ Tidak Ada Data Negara</h4>
                     <p style="color: #64748b; font-size: 12px; margin: 0;">
                         Silakan jalankan:<br>
                         <code style="background: #f1f5f9; padding: 4px 8px; border-radius: 4px; font-size: 11px;">

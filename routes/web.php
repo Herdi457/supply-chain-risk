@@ -21,10 +21,14 @@ Route::middleware(['auth'])->group(function () {
     // Halaman utama dashboard peta
     Route::get('/', function () {
         try {
-            // Use longer cache time and simpler queries
-            $ports = Cache::remember('map_dashboard_ports_v2', 3600, function () {
-                return Port::select('id', 'port_name', 'country_code', 'latitude', 'longitude', 'index_number')
-                    ->limit(100)
+            // Ambil 1 port per negara untuk risk assessment
+            $ports = Cache::remember('map_dashboard_countries_v3', 3600, function () {
+                return \DB::table('ports')
+                    ->select('ports.id', 'ports.port_name', 'ports.country_code', 'ports.latitude', 'ports.longitude', 'countries.name as country_name')
+                    ->leftJoin('countries', 'ports.country_code', '=', 'countries.code')
+                    ->whereNotNull('ports.latitude')
+                    ->whereNotNull('ports.longitude')
+                    ->groupBy('ports.country_code')
                     ->get();
             });
             
@@ -49,7 +53,7 @@ Route::middleware(['auth'])->group(function () {
                 $risk->country = $countries->get($risk->country_id);
             });
             
-            \Log::info('Loading map dashboard', ['ports_count' => $ports->count(), 'risks_count' => $risks->count()]);
+            \Log::info('Loading map dashboard', ['countries_count' => $ports->count(), 'risks_count' => $risks->count()]);
             return view('map_dashboard', compact('ports', 'risks'));
             
         } catch (\Exception $e) {
@@ -61,10 +65,14 @@ Route::middleware(['auth'])->group(function () {
 
     Route::get('/dashboard', function () {
         try {
-            // Use longer cache time and simpler queries
-            $ports = Cache::remember('map_dashboard_ports_v2', 3600, function () {
-                return Port::select('id', 'port_name', 'country_code', 'latitude', 'longitude', 'index_number')
-                    ->limit(100)
+            // Ambil 1 port per negara untuk risk assessment
+            $ports = Cache::remember('map_dashboard_countries_v3', 3600, function () {
+                return \DB::table('ports')
+                    ->select('ports.id', 'ports.port_name', 'ports.country_code', 'ports.latitude', 'ports.longitude', 'countries.name as country_name')
+                    ->leftJoin('countries', 'ports.country_code', '=', 'countries.code')
+                    ->whereNotNull('ports.latitude')
+                    ->whereNotNull('ports.longitude')
+                    ->groupBy('ports.country_code')
                     ->get();
             });
             
@@ -89,7 +97,7 @@ Route::middleware(['auth'])->group(function () {
                 $risk->country = $countries->get($risk->country_id);
             });
             
-            \Log::info('Loading dashboard', ['ports_count' => $ports->count(), 'risks_count' => $risks->count()]);
+            \Log::info('Loading dashboard', ['countries_count' => $ports->count(), 'risks_count' => $risks->count()]);
             return view('map_dashboard', compact('ports', 'risks'));
             
         } catch (\Exception $e) {
