@@ -164,6 +164,7 @@
 		const portData = @json($ports);
 		const markers = {};
 
+		// Render markers TANPA auto-fetch weather (lazy loading)
 		portData.forEach(port => {
 			if (port.latitude && port.longitude) {
 				const marker = L.marker([port.latitude, port.longitude], { icon: normalIcon }).addTo(weatherMap);
@@ -180,32 +181,10 @@
 					</div>
 				`);
 
-				// Ambil data cuaca untuk marker untuk memperbarui icon secara real-time
-				updateMarkerWeatherIcon(port.latitude, port.longitude, marker);
+				// JANGAN auto-fetch weather, tunggu user klik pin
+				// Hanya update icon saat user request cuaca
 			}
 		});
-
-		function updateMarkerWeatherIcon(lat, lng, marker) {
-			const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}&current=rain,wind_speed_10m,weather_code&timezone=auto`;
-			fetch(url)
-				.then(res => res.json())
-				.then(data => {
-					if (data && data.current) {
-						const rain = data.current.rain;
-						const wind = data.current.wind_speed_10m;
-						const code = data.current.weather_code;
-
-						if (inArray(code, [95, 96, 99]) || wind > 50) {
-							marker.setIcon(dangerIcon);
-						} else if (rain > 5 || wind > 30) {
-							marker.setIcon(warningIcon);
-						} else {
-							marker.setIcon(normalIcon);
-						}
-					}
-				})
-				.catch(err => console.error("Error fetching marker weather icon", err));
-		}
 
 		function inArray(needle, haystack) {
 			return haystack.indexOf(needle) > -1;
@@ -248,7 +227,18 @@
 						document.getElementById('detail-temp').innerText = `${temp}°C`;
 						document.getElementById('detail-rain').innerText = `${rain} mm`;
 						document.getElementById('detail-wind').innerText = `${wind} km/h`;
-
+						
+						// Update marker icon based on weather
+						const marker = markers[`${lat}_${lng}`];
+						if (marker) {
+							if (inArray(code, [95, 96, 99]) || wind > 50) {
+								marker.setIcon(dangerIcon);
+							} else if (rain > 5 || wind > 30) {
+								marker.setIcon(warningIcon);
+							} else {
+								marker.setIcon(normalIcon);
+							}
+						}
 						let statusText = "Aman / Normal";
 						let badgeColor = "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20";
 						let indicatorHtml = "";
