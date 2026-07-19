@@ -327,7 +327,10 @@
                     console.warn(`Skipping ${port.port_name}: missing coordinates`);
                 }
             });
-
+            
+            // Add cluster group to map
+            map.addLayer(markers);
+            
             console.log(`✅ ${markersAdded} pelabuhan berhasil ditampilkan di peta dari ${portData.length} total`);
         } else {
             console.warn('⚠️ Tidak ada data pelabuhan. Silakan seed database terlebih dahulu.');
