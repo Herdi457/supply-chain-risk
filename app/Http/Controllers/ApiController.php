@@ -647,6 +647,70 @@ class ApiController extends Controller
     }
 
     /**
+     * Get weather data for a location with caching (1 hour cache)
+     */
+    public function getWeather(Request $request)
+    {
+        try {
+            $lat = $request->query('lat');
+            $lng = $request->query('lng');
+            
+            if (!$lat || !$lng) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Latitude and longitude are required'
+                ], 400);
+            }
+            
+            // Cache key based on coordinates (rounded to 2 decimals)
+            $cacheKey = 'weather_' . round($lat, 2) . '_' . round($lng, 2);
+            
+            // Cache for 1 hour (3600 seconds)
+            $weatherData = Cache::remember($cacheKey, 3600, function () use ($lat, $lng) {
+                $url = "https://api.open-meteo.com/v1/forecast?latitude={$lat}&longitude={$lng}&current=temperature_2m,rain,wind_speed_10m,weather_code&timezone=auto";
+                
+                try {
+                    $response = Http::timeout(10)->get($url);
+                    
+                    if ($response->successful()) {
+                        return $response->json();
+                    }
+                    
+                    return null;
+                } catch (\Exception $e) {
+                    \Log::error('Weather API error: ' . $e->getMessage());
+                    return null;
+                }
+            });
+            
+            if (!$weatherData) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Unable to fetch weather data. Please try again later.',
+                    'error' => 'API_UNAVAILABLE'
+                ], 503);
+            }
+            
+            return response()->json([
+                'success' => true,
+                'data' => $weatherData,
+                'cached' => Cache::has($cacheKey),
+                'coordinates' => [
+                    'lat' => $lat,
+                    'lng' => $lng
+                ]
+            ]);
+            
+        } catch (\Exception $e) {
+            \Log::error('Weather endpoint error: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Server error while fetching weather data'
+            ], 500);
+        }
+    }
+
+    /**
      * Helper: Mengambil data ekonomi dari World Bank API
      */
     private function getWorldBankData($countryCode)

@@ -212,13 +212,14 @@
 			const indicators = document.getElementById('weather-indicators');
 			indicators.innerHTML = `<span class="text-slate-500 animate-pulse text-center block">Memuat data cuaca...</span>`;
 
-			const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lng}&current=temperature_2m,rain,wind_speed_10m,weather_code&timezone=auto`;
+			// Use Laravel API endpoint with caching instead of direct Open-Meteo API
+			const url = `/api/weather?lat=${lat}&lng=${lng}`;
 			
 			fetch(url)
 				.then(res => res.json())
-				.then(data => {
-					if (data && data.current) {
-						const current = data.current;
+				.then(response => {
+					if (response.success && response.data && response.data.current) {
+						const current = response.data.current;
 						const temp = current.temperature_2m;
 						const rain = current.rain;
 						const wind = current.wind_speed_10m;
@@ -277,11 +278,17 @@
 						badge.innerText = statusText;
 
 						indicators.innerHTML = indicatorHtml;
+					} else {
+						// Handle API error or rate limit
+						indicators.innerHTML = `<span class="text-red-400 text-center block">❌ ${response.message || 'Gagal memuat data cuaca'}</span>`;
+						if (response.error === 'API_UNAVAILABLE') {
+							indicators.innerHTML += `<span class="text-slate-500 text-[10px] text-center block mt-1">API cuaca sedang tidak tersedia. Coba lagi nanti.</span>`;
+						}
 					}
 				})
 				.catch(err => {
 					console.error("Error loading weather details", err);
-					indicators.innerHTML = `<span class="text-red-400">Gagal memuat data cuaca.</span>`;
+					indicators.innerHTML = `<span class="text-red-400">❌ Gagal memuat data cuaca</span>`;
 				});
 		}
 

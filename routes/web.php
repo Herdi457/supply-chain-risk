@@ -161,6 +161,7 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/ports', [ApiController::class, 'getPorts']);
         Route::get('/ports/nearby', [ApiController::class, 'getNearbyPorts']);
         Route::get('/ports/stats', [ApiController::class, 'getPortStats']);
+        Route::get('/weather', [ApiController::class, 'getWeather']);
         Route::get('/news', [ApiController::class, 'getNews']);
         Route::get('/currency', [ApiController::class, 'getCurrency']);
         Route::get('/risk', [ApiController::class, 'getRiskScores']);
