@@ -145,7 +145,18 @@ Route::middleware(['auth'])->group(function () {
     });
 
     Route::get('/weather-monitoring', function () {
-        return view('weather_monitoring', ['ports' => Port::all()]);
+        try {
+            $ports = Port::select('id', 'port_name', 'country_code', 'latitude', 'longitude')
+                ->with('country:id,code,name')
+                ->whereNotNull('latitude')
+                ->whereNotNull('longitude')
+                ->get();
+            
+            return view('weather_monitoring', ['ports' => $ports]);
+        } catch (\Exception $e) {
+            \Log::error('Weather monitoring error: ' . $e->getMessage());
+            return view('weather_monitoring', ['ports' => collect([])]);
+        }
     });
 
     Route::get('/watchlist', [WatchlistController::class, 'index']);

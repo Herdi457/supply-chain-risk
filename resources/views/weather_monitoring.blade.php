@@ -42,7 +42,7 @@
 			<div class="lg:col-span-3 bg-slate-900 p-4 rounded-xl border border-slate-800 shadow-2xl">
 				<div class="flex justify-between items-center mb-3">
 					<h2 class="text-sm lg:text-base font-bold text-slate-200 flex items-center gap-2">🗺️ Peta Cuaca Logistik Global</h2>
-					<span class="text-[10px] uppercase font-bold text-sky-400 bg-sky-950/50 px-2.5 py-1 rounded border border-sky-900/30">Active Weather Layer</span>
+					<span class="text-[10px] uppercase font-bold text-sky-400 bg-sky-950/50 px-2.5 py-1 rounded border border-sky-900/30">250 Negara</span>
 				</div>
 				<div id="weather-map" class="shadow-inner bg-slate-950 border border-slate-800"></div>
 			</div>

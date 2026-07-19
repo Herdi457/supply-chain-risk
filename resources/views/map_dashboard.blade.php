@@ -55,10 +55,7 @@
             <div class="lg:col-span-3 bg-slate-900 p-4 rounded-xl border border-slate-800 shadow-2xl">
                 <div class="flex justify-between items-center mb-3">
                     <h2 class="text-sm lg:text-base font-bold text-slate-200 flex items-center gap-2">🗺️ Peta Pelabuhan Global - Risk Assessment</h2>
-                    <div class="flex items-center gap-2">
-                        <button onclick="map.setView([59.93, 30.36], 5)" class="text-[10px] uppercase font-bold text-blue-400 bg-blue-950/50 px-2.5 py-1 rounded border border-blue-900/30 hover:bg-blue-900/50 transition-all cursor-pointer">🇷🇺 Zoom Russia</button>
-                        <span class="text-[10px] uppercase font-bold text-blue-400 bg-blue-950/50 px-2.5 py-1 rounded border border-blue-900/30">Semua Port Visible</span>
-                    </div>
+                    <span class="text-[10px] uppercase font-bold text-blue-400 bg-blue-950/50 px-2.5 py-1 rounded border border-blue-900/30">250 Negara</span>
                 </div>
                 <div id="map" class="shadow-inner bg-slate-950 border border-slate-800" style="height: 550px; width: 100%;"></div>
             </div>
