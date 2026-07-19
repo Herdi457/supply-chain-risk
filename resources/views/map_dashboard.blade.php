@@ -55,7 +55,10 @@
             <div class="lg:col-span-3 bg-slate-900 p-4 rounded-xl border border-slate-800 shadow-2xl">
                 <div class="flex justify-between items-center mb-3">
                     <h2 class="text-sm lg:text-base font-bold text-slate-200 flex items-center gap-2">🗺️ Peta Pelabuhan Global - Risk Assessment</h2>
-                    <span class="text-[10px] uppercase font-bold text-blue-400 bg-blue-950/50 px-2.5 py-1 rounded border border-blue-900/30">Semua Port Visible</span>
+                    <div class="flex items-center gap-2">
+                        <button onclick="map.setView([59.93, 30.36], 5)" class="text-[10px] uppercase font-bold text-blue-400 bg-blue-950/50 px-2.5 py-1 rounded border border-blue-900/30 hover:bg-blue-900/50 transition-all cursor-pointer">🇷🇺 Zoom Russia</button>
+                        <span class="text-[10px] uppercase font-bold text-blue-400 bg-blue-950/50 px-2.5 py-1 rounded border border-blue-900/30">Semua Port Visible</span>
+                    </div>
                 </div>
                 <div id="map" class="shadow-inner bg-slate-950 border border-slate-800" style="height: 550px; width: 100%;"></div>
             </div>
@@ -113,7 +116,7 @@
             noWrap: true,
             maxBounds: [[-85, -180], [85, 180]],
             maxBoundsViscosity: 1.0
-        }).setView([15.0, 10.0], 2);
+        }).setView([30.0, 20.0], 2.5); // Adjusted center to show more of Russia
 
         document.getElementById('map').style.background = '#020617';
 
@@ -136,12 +139,12 @@
 
         console.log('📊 Port data loaded:', portData.length, 'ports');
 
-        // Custom icon untuk marker pelabuhan
+        // Custom icon untuk marker pelabuhan (BIGGER for visibility)
         const portIcon = L.icon({
             iconUrl: 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIzMiIgaGVpZ2h0PSIzMiIgdmlld0JveD0iMCAwIDMyIDMyIj48Y2lyY2xlIGN4PSIxNiIgY3k9IjE2IiByPSIxMiIgZmlsbD0iIzM4OTZmZiIgc3Ryb2tlPSIjZmZmIiBzdHJva2Utd2lkdGg9IjMiLz48Y2lyY2xlIGN4PSIxNiIgY3k9IjE2IiByPSI2IiBmaWxsPSIjZmZmIi8+PC9zdmc+',
-            iconSize: [28, 28],
-            iconAnchor: [14, 14],
-            popupAnchor: [0, -14]
+            iconSize: [32, 32], // Increased from [28, 28]
+            iconAnchor: [16, 16],
+            popupAnchor: [0, -16]
         });
 
         // Render markers untuk setiap pelabuhan (TANPA clustering)
@@ -238,6 +241,13 @@
             });
             
             console.log(`✅ ${markersAdded} pelabuhan berhasil ditampilkan di peta dari ${portData.length} total`);
+            
+            // Show Russia location in console
+            const russiaMarker = portData.find(p => p.country_code === 'RU');
+            if (russiaMarker) {
+                console.log(`🇷🇺 Russia location: ${russiaMarker.latitude}, ${russiaMarker.longitude} (${russiaMarker.port_name})`);
+                console.log('🔍 To see Russia, zoom to coordinates: 59.93°N, 30.36°E or click "Zoom Russia" button');
+            }
         } else {
             console.warn('⚠️ Tidak ada data pelabuhan. Silakan seed database terlebih dahulu.');
             
