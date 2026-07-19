@@ -54,8 +54,8 @@
         <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
             <div class="lg:col-span-3 bg-slate-900 p-4 rounded-xl border border-slate-800 shadow-2xl">
                 <div class="flex justify-between items-center mb-3">
-                    <h2 class="text-sm lg:text-base font-bold text-slate-200 flex items-center gap-2">🗺️ Peta Negara - Risk Assessment</h2>
-                    <span class="text-[10px] uppercase font-bold text-blue-400 bg-blue-950/50 px-2.5 py-1 rounded border border-blue-900/30">1 Pin Per Negara</span>
+                    <h2 class="text-sm lg:text-base font-bold text-slate-200 flex items-center gap-2">🗺️ Peta Pelabuhan Global - Risk Assessment</h2>
+                    <span class="text-[10px] uppercase font-bold text-blue-400 bg-blue-950/50 px-2.5 py-1 rounded border border-blue-900/30">Semua Port Visible</span>
                 </div>
                 <div id="map" class="shadow-inner bg-slate-950 border border-slate-800" style="height: 550px; width: 100%;"></div>
             </div>
@@ -136,46 +136,36 @@
 
         console.log('📊 Port data loaded:', portData.length, 'ports');
 
-        // Group ports by country - hanya ambil 1 port per negara
-        const countriesMap = {};
-        portData.forEach(port => {
-            if (!countriesMap[port.country_code] && port.latitude && port.longitude) {
-                countriesMap[port.country_code] = port;
-            }
+        // Custom icon untuk marker pelabuhan
+        const portIcon = L.icon({
+            iconUrl: 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIzMiIgaGVpZ2h0PSIzMiIgdmlld0JveD0iMCAwIDMyIDMyIj48Y2lyY2xlIGN4PSIxNiIgY3k9IjE2IiByPSIxMiIgZmlsbD0iIzM4OTZmZiIgc3Ryb2tlPSIjZmZmIiBzdHJva2Utd2lkdGg9IjMiLz48Y2lyY2xlIGN4PSIxNiIgY3k9IjE2IiByPSI2IiBmaWxsPSIjZmZmIi8+PC9zdmc+',
+            iconSize: [28, 28],
+            iconAnchor: [14, 14],
+            popupAnchor: [0, -14]
         });
 
-        const uniqueCountryPorts = Object.values(countriesMap);
-        console.log('🌍 Unique countries:', uniqueCountryPorts.length, 'from', portData.length, 'ports');
-
-        // Custom icon untuk marker negara (lebih besar, tanpa clustering)
-        const countryIcon = L.icon({
-            iconUrl: 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIzOCIgaGVpZ2h0PSIzOCIgdmlld0JveD0iMCAwIDM4IDM4Ij48Y2lyY2xlIGN4PSIxOSIgY3k9IjE5IiByPSIxNiIgZmlsbD0iIzM4OTZmZiIgc3Ryb2tlPSIjZmZmIiBzdHJva2Utd2lkdGg9IjMiLz48Y2lyY2xlIGN4PSIxOSIgY3k9IjE5IiByPSI4IiBmaWxsPSIjZmZmIi8+PC9zdmc+',
-            iconSize: [32, 32],
-            iconAnchor: [16, 16],
-            popupAnchor: [0, -16]
-        });
-
-        // Render markers - 1 pin per negara
-        console.log('🗺️ Starting to render country markers...');
-        if (uniqueCountryPorts.length > 0) {
+        // Render markers untuk setiap pelabuhan (TANPA clustering)
+        console.log('🗺️ Starting to render all port markers...');
+        if (portData && portData.length > 0) {
             let markersAdded = 0;
-            uniqueCountryPorts.forEach((port) => {
-                try {
-                    const marker = L.marker([port.latitude, port.longitude], { icon: countryIcon });
+            portData.forEach((port) => {
+                if (port.latitude && port.longitude) {
+                    try {
+                        const marker = L.marker([port.latitude, port.longitude], { icon: portIcon });
                         
                     const popupContent = `
                         <div style="min-width: 220px; font-family: system-ui, -apple-system, sans-serif;">
                             <div style="border-bottom: 2px solid #3b82f6; padding-bottom: 8px; margin-bottom: 10px;">
                                 <h3 style="margin: 0; color: #1e293b; font-size: 16px; font-weight: 700;">
-                                    🌍 ${port.country_name || port.country_code}
+                                    🚢 ${port.port_name}
                                 </h3>
                                 <p style="margin: 4px 0 0 0; color: #64748b; font-size: 12px; font-weight: 600;">
-                                    📍 ${port.port_name}
+                                    📍 ${port.country_name || port.country_code}
                                 </p>
                             </div>
                             
                             <button 
-                                id="btn-api-${port.country_code}"
+                                id="btn-api-${port.country_code}-${port.id}"
                                 onclick="hitungRisikoEfektif('${port.country_code}');"
                                 class="btn-popup-api"
                                 style="
@@ -214,19 +204,22 @@
                     marker.addTo(map);
                     markersAdded++;
                 } catch (e) {
-                    console.error('Error adding marker for country:', port.country_code, e);
+                    console.error('Error adding marker for port:', port.port_name, e);
                 }
+            } else {
+                console.warn(`Skipping ${port.port_name}: missing coordinates`);
+            }
             });
             
-            console.log(`✅ ${markersAdded} negara berhasil ditampilkan di peta dari ${uniqueCountryPorts.length} total unik`);
+            console.log(`✅ ${markersAdded} pelabuhan berhasil ditampilkan di peta dari ${portData.length} total`);
         } else {
-            console.warn('⚠️ Tidak ada data negara. Silakan seed database terlebih dahulu.');
+            console.warn('⚠️ Tidak ada data pelabuhan. Silakan seed database terlebih dahulu.');
             
             // Tampilkan notifikasi di peta
             const noDataMarker = L.marker([0, 0]).addTo(map);
             noDataMarker.bindPopup(`
                 <div style="padding: 15px; text-align: center; font-family: system-ui;">
-                    <h4 style="color: #ef4444; margin: 0 0 10px 0;">⚠️ Tidak Ada Data Negara</h4>
+                    <h4 style="color: #ef4444; margin: 0 0 10px 0;">⚠️ Tidak Ada Data Pelabuhan</h4>
                     <p style="color: #64748b; font-size: 12px; margin: 0;">
                         Silakan jalankan:<br>
                         <code style="background: #f1f5f9; padding: 4px 8px; border-radius: 4px; font-size: 11px;">

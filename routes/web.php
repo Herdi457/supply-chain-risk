@@ -21,22 +21,23 @@ Route::middleware(['auth'])->group(function () {
     // Halaman utama dashboard peta
     Route::get('/', function () {
         try {
-            // Ambil 1 port per negara untuk risk assessment
-            $ports = Cache::remember('map_dashboard_countries_v4', 3600, function () {
-                // Get first port for each country using subquery
-                $subquery = \DB::table('ports')
-                    ->select('country_code', \DB::raw('MIN(id) as first_port_id'))
+            // Ambil semua port untuk akurasi maksimal
+            $ports = Cache::remember('map_dashboard_all_ports_v5', 3600, function () {
+                return Port::select('id', 'port_name', 'country_code', 'latitude', 'longitude')
+                    ->with('country:id,code,name')
                     ->whereNotNull('latitude')
                     ->whereNotNull('longitude')
-                    ->groupBy('country_code');
-                
-                return \DB::table('ports')
-                    ->joinSub($subquery, 'first_ports', function($join) {
-                        $join->on('ports.id', '=', 'first_ports.first_port_id');
-                    })
-                    ->leftJoin('countries', 'ports.country_code', '=', 'countries.code')
-                    ->select('ports.id', 'ports.port_name', 'ports.country_code', 'ports.latitude', 'ports.longitude', 'countries.name as country_name')
-                    ->get();
+                    ->get()
+                    ->map(function($port) {
+                        return [
+                            'id' => $port->id,
+                            'port_name' => $port->port_name,
+                            'country_code' => $port->country_code,
+                            'country_name' => $port->country->name ?? $port->country_code,
+                            'latitude' => $port->latitude,
+                            'longitude' => $port->longitude
+                        ];
+                    });
             });
             
             $risks = Cache::remember('map_dashboard_risks_v2', 1800, function () {
@@ -72,22 +73,23 @@ Route::middleware(['auth'])->group(function () {
 
     Route::get('/dashboard', function () {
         try {
-            // Ambil 1 port per negara untuk risk assessment
-            $ports = Cache::remember('map_dashboard_countries_v4', 3600, function () {
-                // Get first port for each country using subquery
-                $subquery = \DB::table('ports')
-                    ->select('country_code', \DB::raw('MIN(id) as first_port_id'))
+            // Ambil semua port untuk akurasi maksimal
+            $ports = Cache::remember('map_dashboard_all_ports_v5', 3600, function () {
+                return Port::select('id', 'port_name', 'country_code', 'latitude', 'longitude')
+                    ->with('country:id,code,name')
                     ->whereNotNull('latitude')
                     ->whereNotNull('longitude')
-                    ->groupBy('country_code');
-                
-                return \DB::table('ports')
-                    ->joinSub($subquery, 'first_ports', function($join) {
-                        $join->on('ports.id', '=', 'first_ports.first_port_id');
-                    })
-                    ->leftJoin('countries', 'ports.country_code', '=', 'countries.code')
-                    ->select('ports.id', 'ports.port_name', 'ports.country_code', 'ports.latitude', 'ports.longitude', 'countries.name as country_name')
-                    ->get();
+                    ->get()
+                    ->map(function($port) {
+                        return [
+                            'id' => $port->id,
+                            'port_name' => $port->port_name,
+                            'country_code' => $port->country_code,
+                            'country_name' => $port->country->name ?? $port->country_code,
+                            'latitude' => $port->latitude,
+                            'longitude' => $port->longitude
+                        ];
+                    });
             });
             
             $risks = Cache::remember('map_dashboard_risks_v2', 1800, function () {
