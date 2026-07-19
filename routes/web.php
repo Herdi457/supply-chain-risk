@@ -16,7 +16,7 @@ Route::post('/login', [AuthController::class, 'login']);
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
 // JALUR PROTECTED (Harus login dulu)
-// Route::middleware(['auth'])->group(function () {
+Route::middleware(['auth'])->group(function () {
     
     // Halaman utama dashboard peta
     Route::get('/', function () {
@@ -153,17 +153,19 @@ Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
         return view('print_report', compact('risk'));
     });
 
-    // Jalur Panel Admin (CRUD Users, Ports, Articles)
-    Route::get('/admin/dashboard', [AdminController::class, 'index']);
-    Route::post('/admin/users', [AdminController::class, 'storeUser']);
-    Route::put('/admin/users/{id}', [AdminController::class, 'updateUser']);
-    Route::delete('/admin/users/{id}', [AdminController::class, 'destroyUser']);
-    
-    Route::post('/admin/ports', [AdminController::class, 'storePort']);
-    Route::put('/admin/ports/{id}', [AdminController::class, 'updatePort']);
-    Route::delete('/admin/ports/{id}', [AdminController::class, 'destroyPort']);
+    // Jalur Panel Admin (CRUD Users, Ports, Articles) - Only for admin role
+    Route::middleware(['admin'])->group(function () {
+        Route::get('/admin/dashboard', [AdminController::class, 'index']);
+        Route::post('/admin/users', [AdminController::class, 'storeUser']);
+        Route::put('/admin/users/{id}', [AdminController::class, 'updateUser']);
+        Route::delete('/admin/users/{id}', [AdminController::class, 'destroyUser']);
+        
+        Route::post('/admin/ports', [AdminController::class, 'storePort']);
+        Route::put('/admin/ports/{id}', [AdminController::class, 'updatePort']);
+        Route::delete('/admin/ports/{id}', [AdminController::class, 'destroyPort']);
 
-    Route::post('/admin/articles', [AdminController::class, 'storeArticle']);
-    Route::put('/admin/articles/{id}', [AdminController::class, 'updateArticle']);
-    Route::delete('/admin/articles/{id}', [AdminController::class, 'destroyArticle']);
-// });
+        Route::post('/admin/articles', [AdminController::class, 'storeArticle']);
+        Route::put('/admin/articles/{id}', [AdminController::class, 'updateArticle']);
+        Route::delete('/admin/articles/{id}', [AdminController::class, 'destroyArticle']);
+    });
+});

@@ -25,6 +25,16 @@ class DatabaseSeeder extends Seeder
             'updated_at' => now(),
         ]);
 
+        // 2. Akun User Biasa (untuk testing)
+        DB::table('users')->insertOrIgnore([
+            'name' => 'User Demo',
+            'email' => 'user@example.com',
+            'password' => Hash::make('password'),
+            'role' => 'user',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
         // 2. Kamus Kata Positif (AI Lexicon)
         $positiveWords = ['growth', 'increase', 'profit', 'stable', 'improve', 'strengthen', 'recovery', 'surplus', 'boost', 'positive'];
         foreach ($positiveWords as $word) {
