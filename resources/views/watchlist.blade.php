@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>Watchlist - Supply Chain Risk</title>
     
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
@@ -82,11 +83,11 @@
 
         async function loadCountries() {
             try {
-                console.log('Loading countries for watchlist...');
+                console.log('🌍 Loading countries for watchlist...');
                 const response = await fetch('/api/countries?limit=300');
                 const data = await response.json();
                 
-                console.log('Countries response:', data);
+                console.log('📊 Countries response:', data);
                 
                 if (data.success) {
                     countriesData = data.data;
@@ -99,25 +100,33 @@
                         select.appendChild(option);
                     });
                     
-                    console.log('Countries loaded:', data.data.length);
+                    console.log('✅ Countries loaded:', data.data.length);
                 } else {
-                    console.error('Failed to load countries:', data.message);
+                    console.error('❌ Failed to load countries:', data.message);
+                    alert('Gagal memuat daftar negara: ' + data.message);
                 }
             } catch (error) {
-                console.error('Error loading countries:', error);
+                console.error('❌ Error loading countries:', error);
+                alert('Error memuat daftar negara: ' + error.message);
             }
         }
 
         async function loadWatchlist() {
             try {
+                console.log('📋 Loading watchlist...');
                 const response = await fetch('/api/watchlist');
                 const data = await response.json();
                 
+                console.log('📊 Watchlist response:', data);
+                
                 if (data.success) {
                     displayWatchlist(data.data);
+                    console.log('✅ Watchlist loaded:', data.data.length, 'items');
+                } else {
+                    console.error('❌ Failed to load watchlist:', data.message);
                 }
             } catch (error) {
-                console.error('Error loading watchlist:', error);
+                console.error('❌ Error loading watchlist:', error);
             }
         }
 
@@ -181,12 +190,17 @@
 
             const country = JSON.parse(countrySelect.value);
 
+            console.log('🔄 Adding to watchlist:', country);
+
             try {
+                const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '{{ csrf_token() }}';
+                
                 const response = await fetch('/api/watchlist', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                        'X-CSRF-TOKEN': csrfToken,
+                        'Accept': 'application/json'
                     },
                     body: JSON.stringify({
                         country_code: country.code,
@@ -195,7 +209,9 @@
                     })
                 });
 
+                console.log('📊 Response status:', response.status);
                 const data = await response.json();
+                console.log('📊 Response data:', data);
 
                 if (data.success) {
                     alert('✅ Negara berhasil ditambahkan ke watchlist');
@@ -206,8 +222,8 @@
                     alert('❌ ' + data.message);
                 }
             } catch (error) {
-                console.error('Error:', error);
-                alert('Error menambahkan ke watchlist');
+                console.error('❌ Error:', error);
+                alert('Error menambahkan ke watchlist: ' + error.message);
             }
         }
 
@@ -216,25 +232,32 @@
                 return;
             }
 
+            console.log('🗑️ Removing from watchlist:', id);
+
             try {
+                const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '{{ csrf_token() }}';
+                
                 const response = await fetch(`/api/watchlist/${id}`, {
                     method: 'DELETE',
                     headers: {
-                        'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                        'X-CSRF-TOKEN': csrfToken,
+                        'Accept': 'application/json'
                     }
                 });
 
+                console.log('📊 Delete response status:', response.status);
                 const data = await response.json();
+                console.log('📊 Delete response data:', data);
 
                 if (data.success) {
                     alert('✅ Negara berhasil dihapus dari watchlist');
                     loadWatchlist();
                 } else {
-                    alert('❌ Gagal menghapus');
+                    alert('❌ Gagal menghapus: ' + data.message);
                 }
             } catch (error) {
-                console.error('Error:', error);
-                alert('Error menghapus dari watchlist');
+                console.error('❌ Error:', error);
+                alert('Error menghapus dari watchlist: ' + error.message);
             }
         }
 
@@ -252,28 +275,35 @@
             const id = document.getElementById('editId').value;
             const notes = document.getElementById('editNotes').value;
 
+            console.log('✏️ Saving edit:', { id, notes });
+
             try {
+                const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '{{ csrf_token() }}';
+                
                 const response = await fetch(`/api/watchlist/${id}`, {
                     method: 'PUT',
                     headers: {
                         'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                        'X-CSRF-TOKEN': csrfToken,
+                        'Accept': 'application/json'
                     },
                     body: JSON.stringify({ notes })
                 });
 
+                console.log('📊 Update response status:', response.status);
                 const data = await response.json();
+                console.log('📊 Update response data:', data);
 
                 if (data.success) {
                     alert('✅ Catatan berhasil diupdate');
                     closeEditModal();
                     loadWatchlist();
                 } else {
-                    alert('❌ Gagal mengupdate');
+                    alert('❌ Gagal mengupdate: ' + data.message);
                 }
             } catch (error) {
-                console.error('Error:', error);
-                alert('Error mengupdate catatan');
+                console.error('❌ Error:', error);
+                alert('Error mengupdate catatan: ' + error.message);
             }
         }
 

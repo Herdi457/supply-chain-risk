@@ -16,6 +16,12 @@ class WatchlistController extends Controller
 
     public function store(Request $request)
     {
+        \Log::info('📥 Watchlist store request', [
+            'user_id' => Auth::id(),
+            'user_role' => Auth::user()->role ?? 'unknown',
+            'data' => $request->all()
+        ]);
+
         $request->validate([
             'country_code' => 'required|string|max:3',
             'country_name' => 'required|string|max:255',
@@ -28,6 +34,10 @@ class WatchlistController extends Controller
             ->exists();
 
         if ($exists) {
+            \Log::warning('⚠️ Country already in watchlist', [
+                'user_id' => Auth::id(),
+                'country_code' => $request->country_code
+            ]);
             return response()->json([
                 'success' => false,
                 'message' => 'Country already in watchlist'
@@ -40,6 +50,8 @@ class WatchlistController extends Controller
             'country_name' => $request->country_name,
             'notes' => $request->notes
         ]);
+
+        \Log::info('✅ Watchlist created', ['id' => $watchlist->id]);
 
         return response()->json([
             'success' => true,
