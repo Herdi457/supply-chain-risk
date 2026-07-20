@@ -402,10 +402,7 @@
             }).addTo(map);
             destinationMarker.bindPopup(`<b>Destination:</b><br>${destination.name}<br>${destination.country}`);
 
-            // Calculate sea route with waypoints (avoid land)
-            const routePoints = calculateSeaRoute(origin, destination);
-            
-            // Draw route line with smooth curve
+            // Draw route line with smooth curve (routePoints already calculated above)
             routeLine = L.polyline(routePoints, {
                 color: '#3b82f6',
                 weight: 3,
