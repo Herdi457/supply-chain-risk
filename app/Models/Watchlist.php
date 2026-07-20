@@ -8,6 +8,7 @@ class Watchlist extends Model
 {
     protected $fillable = [
         'user_id',
+        'country_id',
         'country_code',
         'country_name',
         'notes'

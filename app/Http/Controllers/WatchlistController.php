@@ -46,6 +46,7 @@ class WatchlistController extends Controller
 
         $watchlist = Watchlist::create([
             'user_id' => Auth::id(),
+            'country_id' => null, // Set NULL karena kita pakai country_code
             'country_code' => $request->country_code,
             'country_name' => $request->country_name,
             'notes' => $request->notes
