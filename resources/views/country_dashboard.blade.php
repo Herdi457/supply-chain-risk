@@ -57,7 +57,10 @@
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
                 <div class="bg-slate-900 p-6 rounded-xl border border-slate-800 shadow-2xl">
                     <div class="flex items-center gap-4 mb-4">
-                        <img id="countryFlag" src="https://via.placeholder.com/64x48?text=Flag" alt="Flag" class="w-16 h-12 object-cover rounded border border-slate-700">
+                        <div id="countryFlagContainer" class="w-16 h-12 flex items-center justify-center bg-slate-950 rounded border border-slate-700">
+                            <span id="countryFlagEmoji" class="text-3xl">🌍</span>
+                            <img id="countryFlag" src="" alt="Flag" class="hidden w-16 h-12 object-cover rounded border border-slate-700">
+                        </div>
                         <div>
                             <h2 id="countryName" class="text-xl font-black text-blue-400"></h2>
                             <p id="countryCapital" class="text-sm text-slate-400"></p>
@@ -268,9 +271,24 @@
 
                     // Basic Info
                     const flagUrl = country.basic_info.flag || `https://flagcdn.com/w320/${country.basic_info.code.toLowerCase()}.png`;
-                    document.getElementById('countryFlag').src = flagUrl;
-                    document.getElementById('countryFlag').onerror = function() { 
+                    const flagImg = document.getElementById('countryFlag');
+                    const flagEmoji = document.getElementById('countryFlagEmoji');
+                    
+                    flagImg.src = flagUrl;
+                    flagImg.onload = function() {
+                        flagImg.classList.remove('hidden');
+                        flagEmoji.classList.add('hidden');
+                    };
+                    flagImg.onerror = function() { 
                         this.src = `https://flagcdn.com/w320/${country.basic_info.code.toLowerCase()}.png`;
+                        // Jika gagal lagi, tetap show emoji
+                        setTimeout(() => {
+                            if (this.complete && this.naturalHeight === 0) {
+                                flagImg.classList.add('hidden');
+                                flagEmoji.classList.remove('hidden');
+                            }
+                        }, 1000);
+                    };
                         this.onerror = function() {
                             this.style.display = 'none';
                         };
