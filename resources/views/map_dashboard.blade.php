@@ -587,6 +587,47 @@
         // ==========================================
         // SEARCH/FILTER FUNCTIONALITY + MAP AUTO-ZOOM
         // ==========================================
+        
+        // Country center coordinates (lat, lng) for accurate zoom
+        const countryCoordinates = {
+            // Americas
+            'united states': [37.0902, -95.7129], 'us': [37.0902, -95.7129], 'usa': [37.0902, -95.7129], 'amerika': [37.0902, -95.7129],
+            'canada': [56.1304, -106.3468], 'kanada': [56.1304, -106.3468],
+            'brazil': [-14.2350, -51.9253], 'brasil': [-14.2350, -51.9253],
+            'mexico': [23.6345, -102.5528], 'meksiko': [23.6345, -102.5528],
+            'argentina': [-38.4161, -63.6167],
+            
+            // Europe
+            'germany': [51.1657, 10.4515], 'jerman': [51.1657, 10.4515],
+            'france': [46.2276, 2.2137], 'prancis': [46.2276, 2.2137],
+            'united kingdom': [55.3781, -3.4360], 'uk': [55.3781, -3.4360], 'inggris': [55.3781, -3.4360],
+            'italy': [41.8719, 12.5674], 'italia': [41.8719, 12.5674],
+            'spain': [40.4637, -3.7492], 'spanyol': [40.4637, -3.7492],
+            'netherlands': [52.1326, 5.2913], 'belanda': [52.1326, 5.2913],
+            'russia': [61.5240, 105.3188], 'rusia': [61.5240, 105.3188],
+            
+            // Asia
+            'indonesia': [-0.7893, 113.9213],
+            'china': [35.8617, 104.1954], 'tiongkok': [35.8617, 104.1954],
+            'japan': [36.2048, 138.2529], 'jepang': [36.2048, 138.2529],
+            'india': [20.5937, 78.9629],
+            'south korea': [35.9078, 127.7669], 'korea': [35.9078, 127.7669],
+            'thailand': [15.8700, 100.9925],
+            'vietnam': [14.0583, 108.2772],
+            'malaysia': [4.2105, 101.9758],
+            'singapore': [1.3521, 103.8198], 'singapura': [1.3521, 103.8198],
+            'iran': [32.4279, 53.6880],
+            'turkey': [38.9637, 35.2433], 'turki': [38.9637, 35.2433],
+            
+            // Africa
+            'south africa': [-30.5595, 22.9375], 'afrika selatan': [-30.5595, 22.9375],
+            'egypt': [26.8206, 30.8025], 'mesir': [26.8206, 30.8025],
+            
+            // Oceania
+            'australia': [-25.2744, 133.7751],
+            'new zealand': [-40.9006, 174.8860]
+        };
+        
         function filterRiskCards() {
             const searchInput = document.getElementById('risk-search').value.toLowerCase().trim();
             const riskCards = document.querySelectorAll('.risk-card');
@@ -598,7 +639,6 @@
                 const countryName = card.getAttribute('data-country') || '';
                 const countryCode = card.getAttribute('data-code') || '';
                 
-                // Match by country name or country code
                 const matchesSearch = countryName.includes(searchInput) || countryCode.includes(searchInput);
                 
                 if (matchesSearch) {
@@ -609,7 +649,6 @@
                 }
             });
             
-            // Show "No results" message if no cards visible
             const sidebar = document.getElementById('risk-sidebar');
             let noResultsMsg = document.getElementById('no-results-msg');
             
@@ -635,61 +674,44 @@
             
             console.log(`✅ Filter applied: ${visibleCount}/${riskCards.length} cards visible`);
             
-            // AUTO-ZOOM TO PORT LOCATION if search has results
+            // AUTO-ZOOM TO COUNTRY CENTER
             if (searchInput !== '') {
                 zoomToSearchedCountry(searchInput);
             } else {
-                // Reset zoom to world view when search is cleared
                 map.setView([30.0, 20.0], 2.5);
             }
         }
         
-        // Zoom map to country's ports based on search term
+        // Zoom map to country CENTER (not ports) for better accuracy
         function zoomToSearchedCountry(searchTerm) {
-            console.log('🗺️ Searching ports for:', searchTerm);
+            console.log('🗺️ Searching country center for:', searchTerm);
             
-            // Find all ports that match the search term (by country name or code)
-            const matchingPorts = portData.filter(port => {
-                const countryName = (port.country_name || '').toLowerCase();
-                const countryCode = (port.country_code || '').toLowerCase();
-                const portName = (port.port_name || '').toLowerCase();
+            // Try exact match first
+            let coords = countryCoordinates[searchTerm];
+            
+            // If not found, try partial match
+            if (!coords) {
+                for (const [key, value] of Object.entries(countryCoordinates)) {
+                    if (key.includes(searchTerm) || searchTerm.includes(key)) {
+                        coords = value;
+                        console.log(`🗺️ Partial match: ${key}`);
+                        break;
+                    }
+                }
+            }
+            
+            if (coords) {
+                const [lat, lng] = coords;
+                console.log(`🎯 Flying to country center: ${lat}, ${lng}`);
                 
-                return countryName.includes(searchTerm) || 
-                       countryCode.includes(searchTerm) ||
-                       portName.includes(searchTerm);
-            });
-            
-            console.log(`🗺️ Found ${matchingPorts.length} ports matching "${searchTerm}"`);
-            
-            if (matchingPorts.length === 0) {
-                console.warn('No ports found for search term:', searchTerm);
-                return;
-            }
-            
-            // Log first few matching ports for debugging
-            if (matchingPorts.length > 0) {
-                console.log('🗺️ First match:', matchingPorts[0].port_name, matchingPorts[0].country_name);
-            }
-            
-            if (matchingPorts.length === 1) {
-                // Single port - zoom to it
-                const port = matchingPorts[0];
-                map.flyTo([port.latitude, port.longitude], 7, {
+                // Fly to country center with zoom level 5 (shows whole country + nearby ports)
+                map.flyTo([lat, lng], 5, {
                     duration: 1.5,
                     easeLinearity: 0.5
                 });
-                console.log(`🎯 Zoomed to single port: ${port.port_name} (${port.country_name})`);
             } else {
-                // Multiple ports - fit bounds to show all
-                const bounds = L.latLngBounds(
-                    matchingPorts.map(p => [p.latitude, p.longitude])
-                );
-                map.flyToBounds(bounds, {
-                    padding: [50, 50],
-                    duration: 1.5,
-                    maxZoom: 8
-                });
-                console.log(`🎯 Zoomed to ${matchingPorts.length} ports in bounds`);
+                console.warn(`⚠️ No coordinates found for: ${searchTerm}`);
+                console.log('💡 Try: "indonesia", "amerika", "jepang", "malaysia", etc.');
             }
         }
     </script>
