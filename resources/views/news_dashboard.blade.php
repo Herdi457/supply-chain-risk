@@ -218,12 +218,19 @@
                 
                 const data = await response.json();
                 console.log('📊 News API response:', data);
+                console.log('📊 data.success:', data.success);
+                console.log('📊 data.data:', data.data);
+                console.log('📊 data.data type:', typeof data.data);
+                console.log('📊 data.data length:', data.data?.length);
+                console.log('📊 First article:', data.data?.[0]);
 
                 if (data.success && data.data && data.data.length > 0) {
+                    console.log('✅ Displaying', data.data.length, 'news articles');
                     displayNews(data.data);
                     analyzeSentiment(data.data);
                 } else {
                     console.warn('⚠️ No news data or unsuccessful response');
+                    console.warn('⚠️ Reason - success:', data.success, 'data exists:', !!data.data, 'length:', data.data?.length);
                     document.getElementById('newsContainer').innerHTML = `
                         <div class="col-span-2 text-center py-12 text-slate-500">
                             <p class="text-xl mb-2">⚠️</p>
