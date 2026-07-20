@@ -208,27 +208,50 @@
             try {
                 console.log('🔄 Loading news for topic:', topic);
                 const response = await fetch(`/api/news?topic=${encodeURIComponent(topic)}&limit=10`);
+                
+                console.log('📡 Response status:', response.status);
+                console.log('📡 Response headers:', response.headers);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
                 const data = await response.json();
                 console.log('📊 News API response:', data);
 
-                if (data.success) {
+                if (data.success && data.data && data.data.length > 0) {
                     displayNews(data.data);
                     analyzeSentiment(data.data);
                 } else {
+                    console.warn('⚠️ No news data or unsuccessful response');
                     document.getElementById('newsContainer').innerHTML = `
                         <div class="col-span-2 text-center py-12 text-slate-500">
                             <p class="text-xl mb-2">⚠️</p>
-                            <p>${data.message}</p>
-                            <p class="text-xs mt-2">Please set GNEWS_API_KEY in your .env file</p>
+                            <p>${data.message || 'No news available for this topic'}</p>
+                            <p class="text-xs mt-2 text-slate-600">Topic: ${topic}</p>
+                            <p class="text-xs text-slate-600">Try selecting a different category or country</p>
                         </div>
                     `;
+                    // Reset sentiment counts
+                    document.getElementById('positiveCount').textContent = '0';
+                    document.getElementById('neutralCount').textContent = '0';
+                    document.getElementById('negativeCount').textContent = '0';
                 }
             } catch (error) {
-                console.error('Error loading news:', error);
+                console.error('❌ Error loading news:', error);
+                console.error('❌ Error stack:', error.stack);
                 document.getElementById('newsContainer').innerHTML = `
                     <div class="col-span-2 text-center py-12 text-red-400">
                         <p class="text-xl mb-2">❌</p>
-                        <p>Error loading news. Please try again later.</p>
+                        <p class="font-bold">Error loading news</p>
+                        <p class="text-sm mt-2 text-slate-500">${error.message}</p>
+                        <p class="text-xs mt-4 text-slate-600">Troubleshooting:</p>
+                        <ul class="text-xs text-left max-w-md mx-auto mt-2 space-y-1">
+                            <li>• Check if server is running: <code class="bg-slate-900 px-2 py-1 rounded">php artisan serve</code></li>
+                            <li>• Verify GNEWS_API_KEY in .env file</li>
+                            <li>• Check browser console (F12) for detailed errors</li>
+                            <li>• API limit: 100 requests/day (GNews free tier)</li>
+                        </ul>
                     </div>
                 `;
             } finally {
