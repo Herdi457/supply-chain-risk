@@ -161,6 +161,10 @@ Route::middleware(['auth'])->group(function () {
 
     Route::get('/watchlist', [WatchlistController::class, 'index']);
 
+    Route::get('/vessel-route-calculator', function () {
+        return view('vessel_route_calculator');
+    });
+
     // Jalur pemicu hitung API Risiko Negara
     Route::get('/api/risk/{code}', [SupplyChainRiskController::class, 'calculateRisk']);
     Route::post('/api/risk/refresh-all', [SupplyChainRiskController::class, 'calculateAllRisks']);

@@ -42,6 +42,9 @@
             <a href="/watchlist" class="px-3 py-2 rounded-lg transition-all {{ request()->is('watchlist') ? 'bg-blue-600 text-white shadow-md' : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60' }}">
                 ⭐ Favorit
             </a>
+            <a href="/vessel-route-calculator" class="px-3 py-2 rounded-lg transition-all {{ request()->is('vessel-route-calculator') ? 'bg-blue-600 text-white shadow-md' : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60' }}">
+                🚢 Route
+            </a>
 
             @if(auth()->user() && auth()->user()->role === 'admin')
                 <a href="/admin/dashboard" class="px-3 py-2 rounded-lg transition-all {{ request()->is('admin/*') ? 'bg-purple-600 text-white shadow-md' : 'text-purple-400 hover:text-purple-200 hover:bg-purple-850/20 border border-purple-950/20' }}">
