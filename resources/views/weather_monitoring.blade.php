@@ -10,11 +10,42 @@
 	<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 	<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 	
+	<!-- Leaflet MarkerCluster for Performance -->
+	<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
+	<link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
+	<script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
+	
 	<style>
 		#weather-map { height: 500px; width: 100%; border-radius: 12px; z-index: 1; }
 		.custom-scrollbar::-webkit-scrollbar { width: 6px; }
 		.custom-scrollbar::-webkit-scrollbar-track { background: #0f172a; }
 		.custom-scrollbar::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+		
+		/* Custom cluster styling */
+		.marker-cluster-small {
+			background-color: rgba(59, 130, 246, 0.6);
+		}
+		.marker-cluster-small div {
+			background-color: rgba(37, 99, 235, 0.8);
+			color: white;
+			font-weight: bold;
+		}
+		.marker-cluster-medium {
+			background-color: rgba(245, 158, 11, 0.6);
+		}
+		.marker-cluster-medium div {
+			background-color: rgba(245, 158, 11, 0.8);
+			color: white;
+			font-weight: bold;
+		}
+		.marker-cluster-large {
+			background-color: rgba(239, 68, 68, 0.6);
+		}
+		.marker-cluster-large div {
+			background-color: rgba(220, 38, 38, 0.8);
+			color: white;
+			font-weight: bold;
+		}
 	</style>
 </head>
 <body class="bg-slate-950 text-slate-100 font-sans antialiased min-h-screen">
@@ -42,7 +73,7 @@
 			<div class="lg:col-span-3 bg-slate-900 p-4 rounded-xl border border-slate-800 shadow-2xl">
 				<div class="flex justify-between items-center mb-3">
 					<h2 class="text-sm lg:text-base font-bold text-slate-200 flex items-center gap-2">🗺️ Peta Cuaca Logistik Global</h2>
-					<span class="text-[10px] uppercase font-bold text-sky-400 bg-sky-950/50 px-2.5 py-1 rounded border border-sky-900/30">250 Negara</span>
+					<span class="text-[10px] uppercase font-bold text-sky-400 bg-sky-950/50 px-2.5 py-1 rounded border border-sky-900/30">{{ count($ports) }} Ports</span>
 				</div>
 				<div id="weather-map" class="shadow-inner bg-slate-950 border border-slate-800"></div>
 			</div>
@@ -163,28 +194,74 @@
 
 		const portData = @json($ports);
 		const markers = {};
-
-		// Render markers TANPA auto-fetch weather (lazy loading)
-		portData.forEach(port => {
-			if (port.latitude && port.longitude) {
-				const marker = L.marker([port.latitude, port.longitude], { icon: normalIcon }).addTo(weatherMap);
-				markers[`${port.latitude}_${port.longitude}`] = marker;
-				
-				marker.bindPopup(`
-					<div style="font-family: system-ui, sans-serif; min-width: 180px;">
-						<h4 style="margin:0; font-size:14px; font-weight:700; color:#1e293b;">🚢 ${port.port_name}</h4>
-						<p style="margin:4px 0 8px 0; color:#64748b; font-size:11px;">📍 ${port.country_code}</p>
-						<button onclick="fetchPortWeather(${port.latitude}, ${port.longitude}, '${port.port_name.replace(/'/g, "\\'")}', '${port.country_code}')" 
-							style="width:100%; background:#2563eb; color:#fff; border:none; padding:6px 12px; border-radius:4px; font-size:11px; font-weight:600; cursor:pointer;">
-							⛅ Cek Cuaca Real-Time
-						</button>
-					</div>
-				`);
-
-				// JANGAN auto-fetch weather, tunggu user klik pin
-				// Hanya update icon saat user request cuaca
+		
+		// Create MarkerClusterGroup for better performance
+		const markerCluster = L.markerClusterGroup({
+			maxClusterRadius: 80, // Distance untuk cluster
+			spiderfyOnMaxZoom: true, // Pecah cluster saat zoom max
+			showCoverageOnHover: false,
+			zoomToBoundsOnClick: true,
+			chunkedLoading: true, // Load markers in chunks
+			chunkInterval: 200, // 200ms per chunk
+			chunkDelay: 50, // 50ms delay between chunks
+			iconCreateFunction: function(cluster) {
+				const count = cluster.getChildCount();
+				let c = ' marker-cluster-';
+				if (count < 10) {
+					c += 'small';
+				} else if (count < 50) {
+					c += 'medium';
+				} else {
+					c += 'large';
+				}
+				return new L.DivIcon({ 
+					html: '<div><span>' + count + '</span></div>', 
+					className: 'marker-cluster' + c, 
+					iconSize: new L.Point(40, 40) 
+				});
 			}
 		});
+
+		// Render markers dengan clustering (LAZY LOADING)
+		let markersAdded = 0;
+		portData.forEach((port, index) => {
+			if (port.latitude && port.longitude) {
+				// Add markers in batches untuk avoid freeze
+				setTimeout(() => {
+					const marker = L.marker([port.latitude, port.longitude], { icon: normalIcon });
+					markers[`${port.latitude}_${port.longitude}`] = marker;
+					
+					marker.bindPopup(`
+						<div style="font-family: system-ui, sans-serif; min-width: 180px;">
+							<h4 style="margin:0; font-size:14px; font-weight:700; color:#1e293b;">🚢 ${port.port_name}</h4>
+							<p style="margin:4px 0 8px 0; color:#64748b; font-size:11px;">📍 ${port.country_code}</p>
+							<button onclick="fetchPortWeather(${port.latitude}, ${port.longitude}, '${port.port_name.replace(/'/g, "\\'")}', '${port.country_code}')" 
+								style="width:100%; background:#2563eb; color:#fff; border:none; padding:6px 12px; border-radius:4px; font-size:11px; font-weight:600; cursor:pointer;">
+								⛅ Cek Cuaca Real-Time
+							</button>
+						</div>
+					`);
+					
+					// Add to cluster instead of map directly
+					markerCluster.addLayer(marker);
+					markersAdded++;
+					
+					// Add cluster to map after first batch
+					if (markersAdded === 100 && !weatherMap.hasLayer(markerCluster)) {
+						weatherMap.addLayer(markerCluster);
+						console.log('✅ First 100 markers clustered and added to map');
+					}
+				}, Math.floor(index / 100) * 50); // Batch 100 markers every 50ms
+			}
+		});
+		
+		// Ensure cluster is added after all markers loaded
+		setTimeout(() => {
+			if (!weatherMap.hasLayer(markerCluster)) {
+				weatherMap.addLayer(markerCluster);
+			}
+			console.log(`✅ All ${markersAdded} markers clustered successfully`);
+		}, portData.length * 0.5 + 500);
 
 		function inArray(needle, haystack) {
 			return haystack.indexOf(needle) > -1;

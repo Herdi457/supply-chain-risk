@@ -11,6 +11,10 @@
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     
+    <!-- Leaflet MarkerCluster for Performance -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster@1.5.3/dist/MarkerCluster.Default.css" />
+    <script src="https://unpkg.com/leaflet.markercluster@1.5.3/dist/leaflet.markercluster.js"></script>
 
     
     <!-- Chart.js untuk visualisasi data -->
@@ -31,6 +35,32 @@
         
         .sidebar-transition {
             transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        /* Custom cluster styling */
+        .marker-cluster-small {
+            background-color: rgba(59, 130, 246, 0.6);
+        }
+        .marker-cluster-small div {
+            background-color: rgba(37, 99, 235, 0.8);
+            color: white;
+            font-weight: bold;
+        }
+        .marker-cluster-medium {
+            background-color: rgba(245, 158, 11, 0.6);
+        }
+        .marker-cluster-medium div {
+            background-color: rgba(245, 158, 11, 0.8);
+            color: white;
+            font-weight: bold;
+        }
+        .marker-cluster-large {
+            background-color: rgba(239, 68, 68, 0.6);
+        }
+        .marker-cluster-large div {
+            background-color: rgba(220, 38, 38, 0.8);
+            color: white;
+            font-weight: bold;
         }
     </style>
 </head>
@@ -55,7 +85,7 @@
             <div class="lg:col-span-3 bg-slate-900 p-4 rounded-xl border border-slate-800 shadow-2xl">
                 <div class="flex justify-between items-center mb-3">
                     <h2 class="text-sm lg:text-base font-bold text-slate-200 flex items-center gap-2">🗺️ Peta Pelabuhan Global - Risk Assessment</h2>
-                    <span class="text-[10px] uppercase font-bold text-blue-400 bg-blue-950/50 px-2.5 py-1 rounded border border-blue-900/30">250 Negara</span>
+                    <span class="text-[10px] uppercase font-bold text-blue-400 bg-blue-950/50 px-2.5 py-1 rounded border border-blue-900/30">{{ count($ports) }} Ports</span>
                 </div>
                 <div id="map" class="shadow-inner bg-slate-950 border border-slate-800" style="height: 550px; width: 100%;"></div>
             </div>
@@ -144,8 +174,35 @@
             popupAnchor: [0, -16]
         });
 
-        // Render markers untuk setiap pelabuhan (TANPA clustering)
-        console.log('🗺️ Starting to render all port markers...');
+        // Create MarkerClusterGroup for better performance
+        const markerCluster = L.markerClusterGroup({
+            maxClusterRadius: 70,
+            spiderfyOnMaxZoom: true,
+            showCoverageOnHover: false,
+            zoomToBoundsOnClick: true,
+            chunkedLoading: true,
+            chunkInterval: 150,
+            chunkDelay: 40,
+            iconCreateFunction: function(cluster) {
+                const count = cluster.getChildCount();
+                let c = ' marker-cluster-';
+                if (count < 10) {
+                    c += 'small';
+                } else if (count < 50) {
+                    c += 'medium';
+                } else {
+                    c += 'large';
+                }
+                return new L.DivIcon({ 
+                    html: '<div><span>' + count + '</span></div>', 
+                    className: 'marker-cluster' + c, 
+                    iconSize: new L.Point(40, 40) 
+                });
+            }
+        });
+
+        // Render markers untuk setiap pelabuhan dengan clustering
+        console.log('🗺️ Starting to render all port markers with clustering...');
         if (portData && portData.length > 0) {
             let markersAdded = 0;
             
@@ -153,20 +210,20 @@
             const russiaPort = portData.find(p => p.country_code === 'RU');
             console.log('🔍 Russia port in data:', russiaPort);
             
-            portData.forEach((port) => {
+            portData.forEach((port, index) => {
                 if (port.latitude && port.longitude) {
-                    try {
-                        const marker = L.marker([port.latitude, port.longitude], { icon: portIcon });
-                        
-                        // Extra logging for Russia
-                        if (port.country_code === 'RU') {
-                            console.log('🇷🇺 Adding Russia marker:', {
-                                name: port.port_name,
-                                lat: port.latitude,
-                                lng: port.longitude,
-                                marker: marker
-                            });
-                        }
+                    // Add markers in batches untuk avoid freeze
+                    setTimeout(() => {
+                        try {
+                            const marker = L.marker([port.latitude, port.longitude], { icon: portIcon });
+                            
+                            if (port.country_code === 'RU') {
+                                console.log('🇷🇺 Adding Russia marker:', {
+                                    name: port.port_name,
+                                    lat: port.latitude,
+                                    lng: port.longitude
+                                });
+                            }
                         
                     const popupContent = `
                         <div style="min-width: 220px; font-family: system-ui, -apple-system, sans-serif;">
@@ -216,12 +273,18 @@
                         className: 'custom-popup'
                     });
                     
-                    marker.addTo(map);
+                    // Add to cluster instead of map directly
+                    markerCluster.addLayer(marker);
                     markersAdded++;
                     
-                    // Extra logging for Russia
+                    // Add cluster to map after first batch
+                    if (markersAdded === 100 && !map.hasLayer(markerCluster)) {
+                        map.addLayer(markerCluster);
+                        console.log('✅ First 100 markers clustered and added to map');
+                    }
+                    
                     if (port.country_code === 'RU') {
-                        console.log('✅ Russia marker added successfully!');
+                        console.log('✅ Russia marker added to cluster successfully!');
                     }
                 } catch (e) {
                     console.error('Error adding marker for port:', port.port_name, e);
@@ -229,6 +292,7 @@
                         console.error('❌ RUSSIA MARKER FAILED!', e);
                     }
                 }
+            }, Math.floor(index / 100) * 50); // Batch 100 markers every 50ms
             } else {
                 console.warn(`Skipping ${port.port_name}: missing coordinates`);
                 if (port.country_code === 'RU') {
@@ -237,7 +301,13 @@
             }
             });
             
-            console.log(`✅ ${markersAdded} pelabuhan berhasil ditampilkan di peta dari ${portData.length} total`);
+            // Ensure cluster is added after all markers loaded
+            setTimeout(() => {
+                if (!map.hasLayer(markerCluster)) {
+                    map.addLayer(markerCluster);
+                }
+                console.log(`✅ All ${markersAdded} markers clustered successfully`);
+            }, portData.length * 0.5 + 500);
             
             // Show Russia location in console
             const russiaMarker = portData.find(p => p.country_code === 'RU');
