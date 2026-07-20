@@ -155,15 +155,20 @@
                 const response = await fetch('/api/ports?limit=1000');
                 const data = await response.json();
                 
+                console.log('📊 API Response:', data);
+                
                 if (data.success) {
                     portsData = data.data;
+                    console.log('📊 First port sample:', portsData[0]);
                     populatePortSelects();
                     console.log('✅ Ports loaded:', portsData.length);
                 } else {
-                    console.error('❌ Failed to load ports');
+                    console.error('❌ Failed to load ports:', data.message);
+                    alert('Failed to load ports: ' + (data.message || 'Unknown error'));
                 }
             } catch (error) {
-                console.error('Error loading ports:', error);
+                console.error('❌ Error loading ports:', error);
+                alert('Error loading ports. Check console for details.');
             }
         }
 
@@ -180,8 +185,8 @@
                 const option1 = document.createElement('option');
                 option1.value = JSON.stringify({
                     name: port.port_name,
-                    lat: port.latitude,
-                    lon: port.longitude,
+                    lat: parseFloat(port.latitude),
+                    lon: parseFloat(port.longitude),
                     country: port.country_code
                 });
                 option1.textContent = `${port.port_name} (${port.country_code})`;
@@ -197,8 +202,10 @@
             if (this.value) {
                 const port = JSON.parse(this.value);
                 document.getElementById('originInfo').classList.remove('hidden');
+                const lat = parseFloat(port.lat);
+                const lon = parseFloat(port.lon);
                 document.getElementById('originCoords').textContent = 
-                    `📍 ${port.lat.toFixed(4)}°, ${port.lon.toFixed(4)}°`;
+                    `📍 ${lat.toFixed(4)}°, ${lon.toFixed(4)}°`;
             } else {
                 document.getElementById('originInfo').classList.add('hidden');
             }
@@ -208,8 +215,10 @@
             if (this.value) {
                 const port = JSON.parse(this.value);
                 document.getElementById('destinationInfo').classList.remove('hidden');
+                const lat = parseFloat(port.lat);
+                const lon = parseFloat(port.lon);
                 document.getElementById('destinationCoords').textContent = 
-                    `📍 ${port.lat.toFixed(4)}°, ${port.lon.toFixed(4)}°`;
+                    `📍 ${lat.toFixed(4)}°, ${lon.toFixed(4)}°`;
             } else {
                 document.getElementById('destinationInfo').classList.add('hidden');
             }
