@@ -585,12 +585,13 @@
         }, 60000);
 
         // ==========================================
-        // SEARCH/FILTER FUNCTIONALITY
+        // SEARCH/FILTER FUNCTIONALITY + MAP AUTO-ZOOM
         // ==========================================
         function filterRiskCards() {
             const searchInput = document.getElementById('risk-search').value.toLowerCase().trim();
             const riskCards = document.querySelectorAll('.risk-card');
             let visibleCount = 0;
+            let firstMatchCountryCode = null;
             
             console.log('🔍 Filtering with search term:', searchInput);
             
@@ -604,6 +605,11 @@
                 if (matchesSearch) {
                     card.style.display = '';
                     visibleCount++;
+                    
+                    // Store first match for map zoom
+                    if (!firstMatchCountryCode) {
+                        firstMatchCountryCode = countryCode.toUpperCase();
+                    }
                 } else {
                     card.style.display = 'none';
                 }
@@ -634,5 +640,51 @@
             }
             
             console.log(`✅ Filter applied: ${visibleCount}/${riskCards.length} cards visible`);
+            
+            // AUTO-ZOOM TO PORT LOCATION if search has results
+            if (visibleCount > 0 && searchInput !== '' && firstMatchCountryCode) {
+                zoomToCountryPorts(firstMatchCountryCode);
+            } else if (searchInput === '') {
+                // Reset zoom to world view when search is cleared
+                map.setView([30.0, 20.0], 2.5);
+            }
+        }
+        
+        // Zoom map to country's ports
+        function zoomToCountryPorts(countryCode) {
+            console.log('🗺️ Zooming to country:', countryCode);
+            
+            // Find all ports for this country
+            const countryPorts = portData.filter(port => 
+                port.country_code && port.country_code.toUpperCase() === countryCode.toUpperCase()
+            );
+            
+            console.log(`🗺️ Found ${countryPorts.length} ports for ${countryCode}`);
+            
+            if (countryPorts.length === 0) {
+                console.warn('No ports found for country:', countryCode);
+                return;
+            }
+            
+            if (countryPorts.length === 1) {
+                // Single port - zoom to it
+                const port = countryPorts[0];
+                map.flyTo([port.latitude, port.longitude], 6, {
+                    duration: 1.5,
+                    easeLinearity: 0.5
+                });
+                console.log(`🎯 Zoomed to single port: ${port.port_name}`);
+            } else {
+                // Multiple ports - fit bounds to show all
+                const bounds = L.latLngBounds(
+                    countryPorts.map(p => [p.latitude, p.longitude])
+                );
+                map.flyToBounds(bounds, {
+                    padding: [50, 50],
+                    duration: 1.5,
+                    maxZoom: 7
+                });
+                console.log(`🎯 Zoomed to ${countryPorts.length} ports bounds`);
+            }
         }
     </script>
