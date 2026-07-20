@@ -113,6 +113,12 @@
                                     {{ $risk->risk_level }}
                                 </span>
                             </div>
+                            <div class="mt-2 text-[9px] text-slate-500 flex items-center gap-1">
+                                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                </svg>
+                                Updated: {{ $risk->updated_at->diffForHumans() }}
+                            </div>
                             <div class="mt-3 pt-2 border-t border-slate-900 flex justify-between items-center">
                                 <a href="/risk/print/{{ $risk->id }}" target="_blank" class="bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-300 px-2.5 py-1.5 rounded text-[11px] font-bold transition-all no-underline">🖨️ PDF</a>
                                 <div class="text-right">
