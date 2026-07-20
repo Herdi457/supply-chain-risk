@@ -27,6 +27,19 @@ class RiskScore extends Model
     ];
 
     /**
+     * Append custom attributes to JSON
+     */
+    protected $appends = ['updated_at_human'];
+
+    /**
+     * Get human-readable updated_at
+     */
+    public function getUpdatedAtHumanAttribute()
+    {
+        return $this->updated_at ? $this->updated_at->diffForHumans() : 'recently';
+    }
+
+    /**
      * Relasi ke model Country (Menghubungkan tabel risk_scores ke countries)
      */
     public function country()
