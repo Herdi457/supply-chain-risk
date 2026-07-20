@@ -269,13 +269,6 @@
                             </div>
                         </div>
                     `;
-                        <div class="col-span-2 text-center py-12 text-slate-500">
-                            <p class="text-xl mb-2">⚠️</p>
-                            <p>${data.message || 'No news available for this topic'}</p>
-                            <p class="text-xs mt-2 text-slate-600">Topic: ${topic}</p>
-                            <p class="text-xs text-slate-600">Try selecting a different category or country</p>
-                        </div>
-                    `;
                     // Reset sentiment counts
                     document.getElementById('positiveCount').textContent = '0';
                     document.getElementById('neutralCount').textContent = '0';
