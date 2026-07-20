@@ -231,7 +231,44 @@
                 } else {
                     console.warn('⚠️ No news data or unsuccessful response');
                     console.warn('⚠️ Reason - success:', data.success, 'data exists:', !!data.data, 'length:', data.data?.length);
+                    
+                    // Show helpful error message
                     document.getElementById('newsContainer').innerHTML = `
+                        <div class="col-span-2 text-center py-12 text-amber-400 bg-amber-950/20 border border-amber-500/30 rounded-lg">
+                            <p class="text-3xl mb-4">🔑</p>
+                            <p class="text-xl font-bold mb-2">GNews API Issue Detected</p>
+                            <p class="text-sm text-slate-400 mb-4">${data.message || 'No articles returned from API'}</p>
+                            
+                            <div class="text-left max-w-2xl mx-auto bg-slate-900 p-4 rounded-lg border border-slate-800 text-sm space-y-2">
+                                <p class="font-bold text-amber-400">🔍 Troubleshooting:</p>
+                                <ul class="space-y-1 text-slate-300">
+                                    <li><strong>1. API Limit:</strong> GNews free tier = 100 requests/day</li>
+                                    <li><strong>2. API Key Status:</strong> May be expired or blocked</li>
+                                    <li><strong>3. Get New API Key:</strong> 
+                                        <a href="https://gnews.io/register" target="_blank" class="text-blue-400 hover:underline">
+                                            https://gnews.io/register
+                                        </a>
+                                    </li>
+                                </ul>
+                                
+                                <p class="font-bold text-emerald-400 mt-4">✅ Solution:</p>
+                                <ol class="space-y-1 text-slate-300 list-decimal list-inside">
+                                    <li>Register at <a href="https://gnews.io" target="_blank" class="text-blue-400 hover:underline">gnews.io</a></li>
+                                    <li>Copy your new API key</li>
+                                    <li>Update <code class="bg-slate-950 px-2 py-1 rounded">.env</code> file:</li>
+                                </ol>
+                                <pre class="bg-slate-950 p-3 rounded mt-2 text-xs text-emerald-400">GNEWS_API_KEY=your_new_api_key_here</pre>
+                                <ol start="4" class="space-y-1 text-slate-300 list-decimal list-inside mt-2">
+                                    <li>Clear cache: <code class="bg-slate-950 px-2 py-1 rounded">php artisan cache:clear</code></li>
+                                    <li>Restart server: <code class="bg-slate-950 px-2 py-1 rounded">php artisan serve</code></li>
+                                </ol>
+                                
+                                <p class="text-xs text-slate-500 mt-4 italic">
+                                    Current API Key (last 8 chars): ...${data.apiKeyHint || 'c55'}
+                                </p>
+                            </div>
+                        </div>
+                    `;
                         <div class="col-span-2 text-center py-12 text-slate-500">
                             <p class="text-xl mb-2">⚠️</p>
                             <p>${data.message || 'No news available for this topic'}</p>

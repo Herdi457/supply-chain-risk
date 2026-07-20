@@ -493,7 +493,18 @@ class ApiController extends Controller
                     ]);
 
                     if ($response->successful()) {
-                        return $response->json();
+                        $data = $response->json();
+                        \Log::info('GNews API success', [
+                            'topic' => $topic,
+                            'articles_count' => count($data['articles'] ?? []),
+                            'total_articles' => $data['totalArticles'] ?? 0
+                        ]);
+                        return $data;
+                    } else {
+                        \Log::error('GNews API HTTP error', [
+                            'status' => $response->status(),
+                            'body' => $response->body()
+                        ]);
                     }
                 } catch (\Exception $e) {
                     \Log::error('GNews API failed: ' . $e->getMessage());
@@ -525,7 +536,11 @@ class ApiController extends Controller
             return response()->json([
                 'success' => true,
                 'data' => $news['articles'] ?? [],
-                'total' => count($news['articles'] ?? [])
+                'total' => count($news['articles'] ?? []),
+                'message' => empty($news['articles']) 
+                    ? 'No articles found. Possible reasons: API limit exceeded (100/day), invalid API key, or no matching articles.' 
+                    : null,
+                'apiKeyHint' => $apiKey ? substr($apiKey, -8) : null
             ]);
 
         } catch (\Exception $e) {
