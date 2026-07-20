@@ -410,16 +410,16 @@
                         setTimeout(() => {
                             console.log('🔄 Executing delayed refresh...');
                             refreshRiskSidebar();
-                        }, 2000); // Delay 2 detik untuk memastikan data tersimpan
-                        
-                        // Scroll ke sidebar untuk melihat hasil risiko
-                        setTimeout(() => {
-                            const sidebar = document.getElementById('risk-sidebar');
-                            if (sidebar) {
-                                sidebar.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                                console.log('Scrolled to sidebar');
-                            }
-                        }, 500);
+                            
+                            // Scroll sidebar to TOP to show newly calculated risk
+                            setTimeout(() => {
+                                const sidebar = document.getElementById('risk-sidebar');
+                                if (sidebar) {
+                                    sidebar.scrollTop = 0;
+                                    console.log('✅ Scrolled sidebar to top');
+                                }
+                            }, 500);
+                        }, 2000);
                     } else {
                         console.log('❌ Risk calculation FAILED for:', countryCode);
                         console.log('❌ Error message:', data.message);
@@ -622,6 +622,9 @@
             // Africa
             'south africa': [-30.5595, 22.9375], 'afrika selatan': [-30.5595, 22.9375],
             'egypt': [26.8206, 30.8025], 'mesir': [26.8206, 30.8025],
+            'nigeria': [9.0820, 8.6753],
+            'kenya': [-0.0236, 37.9062],
+            'morocco': [31.7917, -7.0926], 'maroko': [31.7917, -7.0926],
             
             // Oceania
             'australia': [-25.2744, 133.7751],
