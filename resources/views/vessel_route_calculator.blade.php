@@ -227,6 +227,98 @@
             return R * c;
         }
 
+        // Calculate sea route with waypoints to avoid land
+        function calculateSeaRoute(origin, destination) {
+            const points = [[origin.lat, origin.lon]];
+            
+            // Determine if route crosses major landmass and add waypoints
+            const latDiff = destination.lat - origin.lat;
+            const lonDiff = destination.lon - origin.lon;
+            
+            // Route type detection
+            const isTransArctic = (origin.lat > 60 || destination.lat > 60) && 
+                                  Math.abs(lonDiff) > 90;
+            const isCrossPacific = Math.abs(lonDiff) > 140;
+            const isCrossAtlantic = (origin.lon < -20 && destination.lon > 0) || 
+                                   (origin.lon > 0 && destination.lon < -20);
+            const isAroundAfrica = (origin.lon > 90 && destination.lon < 0) || 
+                                   (origin.lon < 0 && destination.lon > 90);
+            
+            // Trans-Arctic route (through Arctic Ocean)
+            if (isTransArctic) {
+                // Add Arctic waypoint
+                const arcticLat = Math.max(origin.lat, destination.lat) + 10;
+                const midLon = (origin.lon + destination.lon) / 2;
+                points.push([arcticLat, midLon]);
+            }
+            // Cross Pacific route
+            else if (isCrossPacific) {
+                // Add mid-Pacific waypoint
+                const midLat = (origin.lat + destination.lat) / 2;
+                const midLon = (origin.lon + destination.lon) / 2;
+                points.push([midLat, midLon]);
+            }
+            // Cross Atlantic route
+            else if (isCrossAtlantic) {
+                // Add mid-Atlantic waypoint
+                const midLat = (origin.lat + destination.lat) / 2;
+                const midLon = (origin.lon + destination.lon) / 2;
+                points.push([midLat, midLon]);
+            }
+            // Around Africa route (via Cape of Good Hope or Suez)
+            else if (isAroundAfrica && (origin.lat < 0 || destination.lat < 0)) {
+                // Add Cape of Good Hope waypoint
+                points.push([-35, 20]); // South Africa cape area
+            }
+            // Europe to Asia route (via Suez or around Africa)
+            else if (origin.lon > -10 && origin.lon < 40 && destination.lon > 50 && destination.lon < 120) {
+                // Via Suez Canal
+                points.push([30, 32]); // Suez area
+                points.push([12, 43]); // Red Sea
+            }
+            // Asia to Europe route
+            else if (origin.lon > 50 && origin.lon < 120 && destination.lon > -10 && destination.lon < 40) {
+                // Via Suez Canal
+                points.push([12, 43]); // Red Sea
+                points.push([30, 32]); // Suez area
+            }
+            // Americas to Asia/Australia (via Panama or around South America)
+            else if ((origin.lon < -60 && destination.lon > 100) || 
+                     (origin.lon > 100 && destination.lon < -60)) {
+                if (origin.lat > 10 || destination.lat > 10) {
+                    // Via Panama Canal
+                    points.push([9, -79.5]); // Panama area
+                } else {
+                    // Around South America (Cape Horn)
+                    points.push([-55, -67]); // Cape Horn area
+                }
+            }
+            // Default: add midpoint for smooth curve
+            else if (Math.abs(latDiff) > 20 || Math.abs(lonDiff) > 30) {
+                const midLat = (origin.lat + destination.lat) / 2;
+                const midLon = (origin.lon + destination.lon) / 2;
+                // Add slight curve to avoid straight line through land
+                const curveLat = midLat + (latDiff > 0 ? 5 : -5);
+                points.push([curveLat, midLon]);
+            }
+            
+            points.push([destination.lat, destination.lon]);
+            return points;
+        }
+
+        // Calculate total route distance from waypoints
+        function calculateRouteDistance(routePoints) {
+            let totalDistance = 0;
+            for (let i = 0; i < routePoints.length - 1; i++) {
+                const dist = calculateDistance(
+                    routePoints[i][0], routePoints[i][1],
+                    routePoints[i+1][0], routePoints[i+1][1]
+                );
+                totalDistance += dist;
+            }
+            return totalDistance;
+        }
+
         // Calculate route and ETA
         async function calculateRoute() {
             const originSelect = document.getElementById('originPort');
@@ -243,11 +335,11 @@
 
             console.log('🧭 Calculating route:', origin.name, '→', destination.name);
 
-            // Calculate distance
-            const distance = calculateDistance(
-                origin.lat, origin.lon,
-                destination.lat, destination.lon
-            );
+            // Calculate sea route with waypoints
+            const routePoints = calculateSeaRoute(origin, destination);
+            
+            // Calculate total distance along the route
+            const distance = calculateRouteDistance(routePoints);
 
             // Calculate base ETA (hours)
             const baseETAHours = distance / vesselSpeed;
@@ -310,16 +402,30 @@
             }).addTo(map);
             destinationMarker.bindPopup(`<b>Destination:</b><br>${destination.name}<br>${destination.country}`);
 
-            // Draw route line
-            routeLine = L.polyline([
-                [origin.lat, origin.lon],
-                [destination.lat, destination.lon]
-            ], {
+            // Calculate sea route with waypoints (avoid land)
+            const routePoints = calculateSeaRoute(origin, destination);
+            
+            // Draw route line with smooth curve
+            routeLine = L.polyline(routePoints, {
                 color: '#3b82f6',
                 weight: 3,
-                opacity: 0.7,
-                dashArray: '10, 10'
+                opacity: 0.8,
+                smoothFactor: 1
             }).addTo(map);
+
+            // Add waypoint markers (optional, for debugging)
+            if (routePoints.length > 2) {
+                routePoints.slice(1, -1).forEach((point, index) => {
+                    L.circleMarker(point, {
+                        radius: 4,
+                        fillColor: '#fbbf24',
+                        color: '#ffffff',
+                        weight: 1,
+                        opacity: 0.8,
+                        fillOpacity: 0.6
+                    }).addTo(map).bindPopup(`Waypoint ${index + 1}`);
+                });
+            }
 
             // Fit map to route
             const bounds = L.latLngBounds([
