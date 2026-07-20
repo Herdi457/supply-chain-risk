@@ -7,10 +7,15 @@ Current API Key (Updated: July 20, 2026)
 
 Configuration
 -------------
-Update in .env file:
+✅ FIXED: Removed duplicate GNEWS_API_KEY entries
+Only use this configuration in .env:
+
 GNEWS_API_KEY=3cc04f58cf26c121b2d0cb7bec3a8fee
 
-Then clear cache:
+⚠️ IMPORTANT: Restart server after updating .env!
+Laravel loads .env at boot time, not runtime.
+
+Steps after .env update:
 php artisan cache:clear
 php artisan config:clear
 php artisan view:clear
