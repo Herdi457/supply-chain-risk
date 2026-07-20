@@ -1,0 +1,40 @@
+GNews API Key Configuration
+============================
+
+Current API Key (Updated: July 20, 2026)
+----------------------------------------
+3cc04f58cf26c121b2d0cb7bec3a8fee
+
+Configuration
+-------------
+Update in .env file:
+GNEWS_API_KEY=3cc04f58cf26c121b2d0cb7bec3a8fee
+
+Then clear cache:
+php artisan cache:clear
+php artisan config:clear
+php artisan view:clear
+
+Test API directly:
+curl "https://gnews.io/api/v4/search?q=supply+chain&lang=en&max=3&apikey=3cc04f58cf26c121b2d0cb7bec3a8fee"
+
+API Limits
+----------
+- Free Tier: 100 requests/day
+- Data Delay: 12 hours (real-time requires paid plan)
+- Max articles per request: 10
+
+Status
+------
+✅ API Key working (tested July 20, 2026 19:30 WIB)
+✅ Returns articles successfully
+⚠️ 12-hour delay on free tier
+
+Get New API Key
+---------------
+If limit exceeded or key expired:
+1. Visit: https://gnews.io/register
+2. Create account
+3. Get API key from dashboard
+4. Update .env file
+5. Clear cache and restart server
