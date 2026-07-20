@@ -591,7 +591,6 @@
             const searchInput = document.getElementById('risk-search').value.toLowerCase().trim();
             const riskCards = document.querySelectorAll('.risk-card');
             let visibleCount = 0;
-            let firstMatchCountryCode = null;
             
             console.log('🔍 Filtering with search term:', searchInput);
             
@@ -605,11 +604,6 @@
                 if (matchesSearch) {
                     card.style.display = '';
                     visibleCount++;
-                    
-                    // Store first match for map zoom
-                    if (!firstMatchCountryCode) {
-                        firstMatchCountryCode = countryCode.toUpperCase();
-                    }
                 } else {
                     card.style.display = 'none';
                 }
@@ -642,49 +636,60 @@
             console.log(`✅ Filter applied: ${visibleCount}/${riskCards.length} cards visible`);
             
             // AUTO-ZOOM TO PORT LOCATION if search has results
-            if (visibleCount > 0 && searchInput !== '' && firstMatchCountryCode) {
-                zoomToCountryPorts(firstMatchCountryCode);
-            } else if (searchInput === '') {
+            if (searchInput !== '') {
+                zoomToSearchedCountry(searchInput);
+            } else {
                 // Reset zoom to world view when search is cleared
                 map.setView([30.0, 20.0], 2.5);
             }
         }
         
-        // Zoom map to country's ports
-        function zoomToCountryPorts(countryCode) {
-            console.log('🗺️ Zooming to country:', countryCode);
+        // Zoom map to country's ports based on search term
+        function zoomToSearchedCountry(searchTerm) {
+            console.log('🗺️ Searching ports for:', searchTerm);
             
-            // Find all ports for this country
-            const countryPorts = portData.filter(port => 
-                port.country_code && port.country_code.toUpperCase() === countryCode.toUpperCase()
-            );
+            // Find all ports that match the search term (by country name or code)
+            const matchingPorts = portData.filter(port => {
+                const countryName = (port.country_name || '').toLowerCase();
+                const countryCode = (port.country_code || '').toLowerCase();
+                const portName = (port.port_name || '').toLowerCase();
+                
+                return countryName.includes(searchTerm) || 
+                       countryCode.includes(searchTerm) ||
+                       portName.includes(searchTerm);
+            });
             
-            console.log(`🗺️ Found ${countryPorts.length} ports for ${countryCode}`);
+            console.log(`🗺️ Found ${matchingPorts.length} ports matching "${searchTerm}"`);
             
-            if (countryPorts.length === 0) {
-                console.warn('No ports found for country:', countryCode);
+            if (matchingPorts.length === 0) {
+                console.warn('No ports found for search term:', searchTerm);
                 return;
             }
             
-            if (countryPorts.length === 1) {
+            // Log first few matching ports for debugging
+            if (matchingPorts.length > 0) {
+                console.log('🗺️ First match:', matchingPorts[0].port_name, matchingPorts[0].country_name);
+            }
+            
+            if (matchingPorts.length === 1) {
                 // Single port - zoom to it
-                const port = countryPorts[0];
-                map.flyTo([port.latitude, port.longitude], 6, {
+                const port = matchingPorts[0];
+                map.flyTo([port.latitude, port.longitude], 7, {
                     duration: 1.5,
                     easeLinearity: 0.5
                 });
-                console.log(`🎯 Zoomed to single port: ${port.port_name}`);
+                console.log(`🎯 Zoomed to single port: ${port.port_name} (${port.country_name})`);
             } else {
                 // Multiple ports - fit bounds to show all
                 const bounds = L.latLngBounds(
-                    countryPorts.map(p => [p.latitude, p.longitude])
+                    matchingPorts.map(p => [p.latitude, p.longitude])
                 );
                 map.flyToBounds(bounds, {
                     padding: [50, 50],
                     duration: 1.5,
-                    maxZoom: 7
+                    maxZoom: 8
                 });
-                console.log(`🎯 Zoomed to ${countryPorts.length} ports bounds`);
+                console.log(`🎯 Zoomed to ${matchingPorts.length} ports in bounds`);
             }
         }
     </script>
