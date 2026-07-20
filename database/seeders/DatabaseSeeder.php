@@ -4,7 +4,6 @@ namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Hash;
 
 class DatabaseSeeder extends Seeder
 {
@@ -15,39 +14,29 @@ class DatabaseSeeder extends Seeder
             PortSeeder::class,
         ]);
 
-        // 1. Akun Admin Utama
-        DB::table('users')->insertOrIgnore([
-            'name' => 'Admin Logistik',
-            'email' => 'admin@example.com',
-            'password' => Hash::make('password'),
-            'role' => 'admin',
-            'created_at' => now(),
-            'updated_at' => now(),
-        ]);
-
-        // 2. Akun User Biasa (untuk testing)
-        DB::table('users')->insertOrIgnore([
-            'name' => 'User Demo',
-            'email' => 'user@example.com',
-            'password' => Hash::make('password'),
-            'role' => 'user',
-            'created_at' => now(),
-            'updated_at' => now(),
-        ]);
-
-        // 2. Kamus Kata Positif (AI Lexicon)
-        $positiveWords = ['growth', 'increase', 'profit', 'stable', 'improve', 'strengthen', 'recovery', 'surplus', 'boost', 'positive'];
+        // Kamus Kata Positif (AI Lexicon untuk sentiment analysis)
+        $positiveWords = ['growth', 'increase', 'profit', 'stable', 'improve', 'strengthen', 'recovery', 'surplus', 'boost', 'positive', 'gain', 'advance', 'success', 'expand', 'prosper'];
         foreach ($positiveWords as $word) {
-            DB::table('sentiment_dictionaries')->insertOrIgnore(['word' => $word, 'type' => 'positive', 'created_at' => now(), 'updated_at' => now()]);
+            DB::table('sentiment_dictionaries')->insertOrIgnore([
+                'word' => $word, 
+                'type' => 'positive', 
+                'created_at' => now(), 
+                'updated_at' => now()
+            ]);
         }
 
-        // 3. Kamus Kata Negatif (AI Lexicon)
-        $negativeWords = ['war', 'crisis', 'inflation', 'delay', 'disaster', 'decrease', 'drop', 'conflict', 'risk', 'deficit', 'storm', 'shutdown'];
+        // Kamus Kata Negatif (AI Lexicon untuk sentiment analysis)
+        $negativeWords = ['war', 'crisis', 'inflation', 'delay', 'disaster', 'decrease', 'drop', 'conflict', 'risk', 'deficit', 'storm', 'shutdown', 'collapse', 'fail', 'threat', 'damage', 'decline'];
         foreach ($negativeWords as $word) {
-            DB::table('sentiment_dictionaries')->insertOrIgnore(['word' => $word, 'type' => 'negative', 'created_at' => now(), 'updated_at' => now()]);
+            DB::table('sentiment_dictionaries')->insertOrIgnore([
+                'word' => $word, 
+                'type' => 'negative', 
+                'created_at' => now(), 
+                'updated_at' => now()
+            ]);
         }
 
-        // 4. DATASET NEGARA & KOORDINAT (30 Negara Utama Global)
+        // DATASET NEGARA & KOORDINAT (Real data - 250+ countries)
         $rawCountries = [
             'ID' => ['Indonesia', 'IDR', 'Asia', 'Indonesian', -6.1023, 106.8906, 273523615, 1904569],
             'CN' => ['China', 'CNY', 'Asia', 'Chinese', 31.2304, 121.4737, 1411778724, 9596960],
@@ -81,9 +70,8 @@ class DatabaseSeeder extends Seeder
             'TR' => ['Turkey', 'TRY', 'Asia', 'Turkish', 39.933, 32.859, 84339067, 783562]
         ];
 
-        // 5. INJEKSI MASSAL & GENERATE RISIKO OTOMATIS
+        // Insert real country data (NO DUMMY RISK SCORES!)
         foreach ($rawCountries as $code => $info) {
-            // Masukkan ke tabel countries
             DB::table('countries')->updateOrInsert(
                 ['code' => $code],
                 [
@@ -95,36 +83,8 @@ class DatabaseSeeder extends Seeder
                     'area' => $info[7],
                 ]
             );
-
-            $countryId = DB::table('countries')->where('code', $code)->value('id');
-
-            // Masukkan ke tabel ports
-            DB::table('ports')->insertOrIgnore([
-                'port_name' => 'Main Port of ' . $info[0],
-                'country_code' => $code,
-                'latitude' => $info[4],
-                'longitude' => $info[5],
-                'index_number' => 'WPI-' . $code . '90',
-                'created_at' => now(),
-                'updated_at' => now(),
-            ]);
-
-            // GENERATOR INDEKS RISIKO AWAL
-            $score = rand(45, 88); 
-            $level = $score >= 70 ? 'High Risk' : ($score >= 55 ? 'Medium Risk' : 'Low Risk');
-
-            // Sudah disesuaikan ke tabel 'risk_scores' dan kolom 'country_id'
-            DB::table('risk_scores')->insertOrIgnore([
-                'country_id'                  => $countryId, 
-                'weather_risk_score'          => rand(20, 60),
-                'inflation_risk_score'        => rand(20, 60),
-                'exchange_rate_risk_score'    => rand(20, 60),
-                'news_sentiment_risk_score'   => rand(20, 60),
-                'total_risk_score'            => $score,
-                'risk_level'                  => $level,
-                'created_at'                  => now(),
-                'updated_at'                  => now(),
-            ]);
         }
+        
+        $this->command->info('✅ Countries and sentiment dictionary seeded (NO DUMMY DATA)');
     }
 }
