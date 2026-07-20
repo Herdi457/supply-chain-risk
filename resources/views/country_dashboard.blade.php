@@ -289,10 +289,7 @@
                             }
                         }, 1000);
                     };
-                        this.onerror = function() {
-                            this.style.display = 'none';
-                        };
-                    };
+                    
                     document.getElementById('countryName').textContent = country.basic_info.name;
                     document.getElementById('countryCapital').textContent = country.basic_info.capital || 'N/A';
                     document.getElementById('countryCode').textContent = country.basic_info.code;
