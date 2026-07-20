@@ -25,6 +25,44 @@
             </div>
         </header>
 
+        <!-- Country Selector -->
+        <div class="bg-slate-900 p-6 rounded-xl border border-slate-800 shadow-2xl mb-6">
+            <h2 class="text-lg font-bold text-slate-200 mb-4 flex items-center gap-2">
+                🌍 Pilih Negara
+            </h2>
+            <div class="flex flex-col md:flex-row gap-4">
+                <select id="countrySelector" class="flex-1 bg-slate-950 border border-slate-700 text-slate-200 px-4 py-3 rounded-lg font-medium focus:border-blue-500 focus:outline-none">
+                    <option value="">🌍 Global News (Semua Negara)</option>
+                    <option value="Indonesia">🇮🇩 Indonesia</option>
+                    <option value="China">🇨🇳 China</option>
+                    <option value="United States">🇺🇸 United States</option>
+                    <option value="Germany">🇩🇪 Germany</option>
+                    <option value="Japan">🇯🇵 Japan</option>
+                    <option value="Singapore">🇸🇬 Singapore</option>
+                    <option value="Australia">🇦🇺 Australia</option>
+                    <option value="India">🇮🇳 India</option>
+                    <option value="United Kingdom">🇬🇧 United Kingdom</option>
+                    <option value="South Korea">🇰🇷 South Korea</option>
+                    <option value="Brazil">🇧🇷 Brazil</option>
+                    <option value="Canada">🇨🇦 Canada</option>
+                    <option value="France">🇫🇷 France</option>
+                    <option value="Netherlands">🇳🇱 Netherlands</option>
+                    <option value="Russia">🇷🇺 Russia</option>
+                    <option value="Saudi Arabia">🇸🇦 Saudi Arabia</option>
+                    <option value="UAE">🇦🇪 United Arab Emirates</option>
+                    <option value="Malaysia">🇲🇾 Malaysia</option>
+                    <option value="Thailand">🇹🇭 Thailand</option>
+                    <option value="Vietnam">🇻🇳 Vietnam</option>
+                </select>
+                <button onclick="loadNewsByCountry()" class="bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-3 rounded-lg font-bold transition-all whitespace-nowrap">
+                    🔍 Cari Berita
+                </button>
+            </div>
+            <p class="text-xs text-slate-500 mt-2">
+                💡 Pilih negara untuk melihat berita khusus negara tersebut, atau biarkan "Global News" untuk semua berita
+            </p>
+        </div>
+
         <!-- News Category Filter -->
         <div class="bg-slate-900 p-6 rounded-xl border border-slate-800 shadow-2xl mb-6">
             <h2 class="text-lg font-bold text-slate-200 mb-4 flex items-center gap-2">
@@ -97,9 +135,12 @@
         <!-- News Grid -->
         <div class="bg-slate-900 p-6 rounded-xl border border-slate-800 shadow-2xl">
             <div class="flex justify-between items-center mb-4">
-                <h2 class="text-lg font-bold text-slate-200 flex items-center gap-2">
-                    📄 Berita Terbaru
-                </h2>
+                <div>
+                    <h2 class="text-lg font-bold text-slate-200 flex items-center gap-2">
+                        📄 Berita Terbaru
+                    </h2>
+                    <p id="activeFilter" class="text-xs text-slate-500 mt-1"></p>
+                </div>
                 <div id="loadingIndicator" class="hidden">
                     <span class="text-sm text-blue-400 animate-pulse">Loading...</span>
                 </div>
@@ -114,23 +155,54 @@
 
     <script>
         let currentTopic = 'supply chain';
+        let currentCountry = '';
         
         // Lexicon-based sentiment analysis (simple version)
         const positiveWords = ['growth', 'increase', 'profit', 'stable', 'improve', 'success', 'gain', 'rise', 'strong', 'positive', 'boost', 'expansion'];
         const negativeWords = ['war', 'crisis', 'inflation', 'delay', 'disaster', 'decline', 'fall', 'loss', 'risk', 'threat', 'conflict', 'shortage'];
 
-        async function loadNews(topic) {
-            currentTopic = topic;
+        async function loadNewsByCountry() {
+            const countrySelect = document.getElementById('countrySelector');
+            currentCountry = countrySelect.value;
+            
+            console.log('🌍 Loading news for country:', currentCountry || 'Global');
+            
+            // Jika country dipilih, gabungkan dengan topic
+            const searchQuery = currentCountry 
+                ? `${currentTopic} ${currentCountry}` 
+                : currentTopic;
+            
+            // Update active filter text
+            updateActiveFilterText();
+            
+            await loadNews(searchQuery, true);
+        }
+
+        function updateActiveFilterText() {
+            const filterText = currentCountry 
+                ? `Kategori: ${currentTopic} | Negara: ${currentCountry}`
+                : `Kategori: ${currentTopic} | Global News`;
+            document.getElementById('activeFilter').textContent = filterText;
+        }
+
+        async function loadNews(topic, isCountrySearch = false) {
+            if (!isCountrySearch) {
+                currentTopic = topic;
+                updateActiveFilterText();
+            }
+            
             document.getElementById('loadingIndicator').classList.remove('hidden');
             
             // Update active category button
-            document.querySelectorAll('.category-btn').forEach(btn => {
-                btn.classList.remove('bg-blue-600', 'bg-blue-700');
-                btn.classList.add('bg-slate-700');
-            });
-            if (event && event.target) {
-                event.target.classList.remove('bg-slate-700');
-                event.target.classList.add('bg-blue-600');
+            if (!isCountrySearch) {
+                document.querySelectorAll('.category-btn').forEach(btn => {
+                    btn.classList.remove('bg-blue-600', 'bg-blue-700');
+                    btn.classList.add('bg-slate-700');
+                });
+                if (event && event.target) {
+                    event.target.classList.remove('bg-slate-700');
+                    event.target.classList.add('bg-blue-600');
+                }
             }
 
             try {
@@ -255,13 +327,17 @@
 
         // Load initial news
         console.log('📰 Loading initial news...');
+        updateActiveFilterText();
         loadNews('supply chain');
 
         // Auto-refresh news setiap 15 menit untuk real-time
         setInterval(async () => {
             try {
-                await loadNews(currentTopic);
-                console.log('🔄 News data auto-refreshed for:', currentTopic);
+                const searchQuery = currentCountry 
+                    ? `${currentTopic} ${currentCountry}` 
+                    : currentTopic;
+                await loadNews(searchQuery, true);
+                console.log('🔄 News data auto-refreshed for:', searchQuery);
             } catch (err) {
                 console.error('Gagal auto-refresh news:', err);
             }
