@@ -41,6 +41,13 @@
             </button>
         </form>
 
+        <div class="text-center pt-4">
+            <p class="text-slate-400 text-xs">
+                Belum punya akun? 
+                <a href="/register" class="text-blue-500 hover:text-blue-400 font-semibold transition-colors">Daftar di sini</a>
+            </p>
+        </div>
+
         <div class="text-center pt-2 border-t border-slate-800/60">
             <span class="text-[10px] text-slate-500 uppercase tracking-widest">Supply Chain Risk Engine v1.0</span>
         </div>

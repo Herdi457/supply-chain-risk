@@ -49,4 +49,44 @@ class AuthController extends Controller
         $request->session()->regenerateToken();
         return redirect('/login');
     }
+
+    // Menampilkan halaman form register
+    public function showRegister()
+    {
+        if (Auth::check()) {
+            return redirect('/');
+        }
+        return view('register');
+    }
+
+    // Memproses pendaftaran user baru
+    public function register(Request $request)
+    {
+        $validated = $request->validate([
+            'name' => ['required', 'string', 'max:255'],
+            'email' => ['required', 'string', 'email', 'max:255', 'unique:users'],
+            'password' => ['required', 'string', 'min:8', 'confirmed'],
+        ], [
+            'name.required' => 'Nama harus diisi',
+            'email.required' => 'Email harus diisi',
+            'email.email' => 'Format email tidak valid',
+            'email.unique' => 'Email sudah terdaftar',
+            'password.required' => 'Password harus diisi',
+            'password.min' => 'Password minimal 8 karakter',
+            'password.confirmed' => 'Konfirmasi password tidak cocok',
+        ]);
+
+        // Create user with role 'user' (not admin)
+        $user = \App\Models\User::create([
+            'name' => $validated['name'],
+            'email' => $validated['email'],
+            'password' => \Illuminate\Support\Facades\Hash::make($validated['password']),
+            'role' => 'user', // Default role is user, not admin
+        ]);
+
+        // Auto login after registration
+        Auth::login($user);
+
+        return redirect('/')->with('success', 'Registrasi berhasil! Selamat datang, ' . $user->name);
+    }
 }
