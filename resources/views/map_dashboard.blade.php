@@ -91,21 +91,37 @@
             </div>
 
             <div class="bg-slate-900 p-4 rounded-xl border border-slate-800 shadow-2xl flex flex-col max-h-[610px]">
-                <div class="flex justify-between items-center mb-4 border-b border-slate-800 pb-2">
-                    <h2 class="text-sm lg:text-base font-bold text-slate-200 flex items-center gap-2">📊 Hasil Indeks Risiko Terkini</h2>
-                    <button onclick="refreshAllRisks()" id="btn-refresh-all"
-                        class="text-[10px] uppercase font-bold text-blue-400 bg-blue-950/50 px-2 py-1 rounded border border-blue-900/30 hover:bg-blue-900/50 transition-all" disabled>
-                        🔄 Refresh Real-Time
-                    </button>
+                <div class="mb-3 pb-2 border-b border-slate-800">
+                    <div class="flex justify-between items-center mb-2">
+                        <h2 class="text-sm lg:text-base font-bold text-slate-200 flex items-center gap-2">📊 Hasil Indeks Risiko</h2>
+                        <span class="text-[9px] text-slate-500 font-mono">Auto-refresh: 6h</span>
+                    </div>
+                    
+                    <!-- Search Box -->
+                    <div class="relative">
+                        <input 
+                            type="text" 
+                            id="risk-search" 
+                            placeholder="Cari negara..." 
+                            class="w-full bg-slate-950 text-slate-200 border border-slate-800 rounded-lg px-3 py-2 pl-9 text-sm focus:outline-none focus:border-blue-500 placeholder-slate-500"
+                            onkeyup="filterRiskCards()"
+                        >
+                        <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                        </svg>
+                    </div>
                 </div>
+                
                 <div id="risk-sidebar" class="space-y-3 overflow-y-auto flex-1 pr-1 custom-scrollbar">
                     <div id="loading-risks" class="text-center py-8 text-slate-500 hidden">
                         <div class="animate-spin inline-block w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full mb-2"></div>
                         <p class="text-xs">Loading risk data...</p>
                     </div>
                     @forelse($risks as $risk)
-                        <div class="p-3.5 rounded-lg border bg-slate-950 transition-all duration-200 hover:scale-[1.02] 
-                            {{ $risk->risk_level == 'High Risk' ? 'border-red-500/30 bg-red-950/5' : ($risk->risk_level == 'Medium Risk' ? 'border-amber-500/30 bg-amber-950/5' : 'border-emerald-500/30 bg-emerald-950/5') }}">
+                        <div class="risk-card p-3.5 rounded-lg border bg-slate-950 transition-all duration-200 hover:scale-[1.02] 
+                            {{ $risk->risk_level == 'High Risk' ? 'border-red-500/30 bg-red-950/5' : ($risk->risk_level == 'Medium Risk' ? 'border-amber-500/30 bg-amber-950/5' : 'border-emerald-500/30 bg-emerald-950/5') }}"
+                            data-country="{{ strtolower($risk->country->name ?? 'unknown') }}"
+                            data-code="{{ strtolower($risk->country->code ?? '') }}">
                             <div class="flex justify-between items-center">
                                 <span class="font-bold text-sm text-slate-200 tracking-wide">{{ $risk->country->name ?? 'Unknown' }}</span>
                                 <span class="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded tracking-wider
@@ -505,10 +521,18 @@
                     const countryName = risk.country?.name || risk.country_id;
                     const countryCode = risk.country?.code || risk.country_id;
                     console.log('🔄 Rendering risk:', countryCode, countryName, risk.total_risk_score);
-                    return `<div class="p-3.5 rounded-lg border bg-slate-950 transition-all duration-200 hover:scale-[1.02] ${cls.card}">
+                    return `<div class="risk-card p-3.5 rounded-lg border bg-slate-950 transition-all duration-200 hover:scale-[1.02] ${cls.card}"
+                            data-country="${(countryName || '').toLowerCase()}"
+                            data-code="${(countryCode || '').toLowerCase()}">
                         <div class="flex justify-between items-center">
                             <span class="font-bold text-sm text-slate-200 tracking-wide">${countryName}</span>
                             <span class="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded tracking-wider ${cls.badge}">${risk.risk_level}</span>
+                        </div>
+                        <div class="mt-2 text-[9px] text-slate-500 flex items-center gap-1">
+                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                            </svg>
+                            Updated: ${risk.updated_at_human || 'recently'}
                         </div>
                         <div class="mt-3 pt-2 border-t border-slate-900 flex justify-between items-center">
                             <a href="/risk/print/${risk.id}" target="_blank" class="bg-slate-900 hover:bg-slate-800 border border-slate-800 text-slate-300 px-2.5 py-1.5 rounded text-[11px] font-bold transition-all no-underline">🖨️ PDF</a>
@@ -542,38 +566,6 @@
             }
         }
 
-        async function refreshAllRisks() {
-            const btn = document.getElementById('btn-refresh-all');
-            btn.textContent = '⏳ Memproses...';
-            btn.disabled = true;
-
-            try {
-                console.log('Starting risk refresh...');
-                const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
-                const response = await fetch('/api/risk/refresh-all', {
-                    method: 'POST',
-                    headers: {
-                        'X-CSRF-TOKEN': csrfToken || '',
-                        'Accept': 'application/json'
-                    }
-                });
-                console.log('Refresh response:', response);
-                const data = await response.json();
-                console.log('Refresh data:', data);
-                if (data.success) {
-                    await refreshRiskSidebar();
-                    alert('✅ ' + data.message);
-                } else {
-                    alert('❌ ' + data.message);
-                }
-            } catch (err) {
-                console.error('Refresh error:', err);
-                alert('❌ Gagal refresh: ' + err.message);
-            } finally {
-                btn.textContent = '🔄 Refresh Real-Time';
-                btn.disabled = false;
-            }
-        }
 
         // Auto-refresh sidebar setiap 30 detik untuk real-time yang lebih responsif
         setInterval(refreshRiskSidebar, 30000);
@@ -592,6 +584,55 @@
             }
         }, 60000);
 
-        // Enable refresh button after script loads
-        document.getElementById('btn-refresh-all').disabled = false;
+        // ==========================================
+        // SEARCH/FILTER FUNCTIONALITY
+        // ==========================================
+        function filterRiskCards() {
+            const searchInput = document.getElementById('risk-search').value.toLowerCase().trim();
+            const riskCards = document.querySelectorAll('.risk-card');
+            let visibleCount = 0;
+            
+            console.log('🔍 Filtering with search term:', searchInput);
+            
+            riskCards.forEach(card => {
+                const countryName = card.getAttribute('data-country') || '';
+                const countryCode = card.getAttribute('data-code') || '';
+                
+                // Match by country name or country code
+                const matchesSearch = countryName.includes(searchInput) || countryCode.includes(searchInput);
+                
+                if (matchesSearch) {
+                    card.style.display = '';
+                    visibleCount++;
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+            
+            // Show "No results" message if no cards visible
+            const sidebar = document.getElementById('risk-sidebar');
+            let noResultsMsg = document.getElementById('no-results-msg');
+            
+            if (visibleCount === 0 && searchInput !== '') {
+                if (!noResultsMsg) {
+                    noResultsMsg = document.createElement('div');
+                    noResultsMsg.id = 'no-results-msg';
+                    noResultsMsg.className = 'text-center py-12 text-slate-500 text-xs border border-dashed border-slate-800 rounded-lg bg-slate-950/50';
+                    noResultsMsg.innerHTML = `
+                        <span class="text-2xl block mb-2">🔍</span>
+                        Tidak ada negara yang cocok dengan "<strong>${searchInput}</strong>"
+                    `;
+                    sidebar.prepend(noResultsMsg);
+                } else {
+                    noResultsMsg.innerHTML = `
+                        <span class="text-2xl block mb-2">🔍</span>
+                        Tidak ada negara yang cocok dengan "<strong>${searchInput}</strong>"
+                    `;
+                }
+            } else if (noResultsMsg) {
+                noResultsMsg.remove();
+            }
+            
+            console.log(`✅ Filter applied: ${visibleCount}/${riskCards.length} cards visible`);
+        }
     </script>
